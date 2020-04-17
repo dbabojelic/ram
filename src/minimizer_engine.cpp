@@ -41,9 +41,15 @@ const std::vector<std::uint64_t> kCoder = {
 
 MinimizerEngine::MinimizerEngine(
     std::uint32_t kmer_len, std::uint32_t window_len,
+    std::uint32_t chaining_score_treshold,
+    std::uint64_t chain_enlongation_stop_criteria,
+    std::uint8_t chain_minimizer_cnt_treshold,
     std::shared_ptr<thread_pool::ThreadPool> thread_pool)
     : k_(std::min(std::max(kmer_len, 1U), 32U)),
       w_(window_len),
+      m_(chaining_score_treshold),
+      g_(chain_enlongation_stop_criteria),
+      n_(chain_minimizer_cnt_treshold),
       occurrence_(-1),
       minimizers_(1U << std::min(14U, 2 * k_)),
       index_(minimizers_.size()),
@@ -247,7 +253,7 @@ std::vector<biosoup::Overlap> MinimizerEngine::Chain(
   std::vector<uint128_t> intervals;
   for (std::uint64_t i = 1, j = 0; i < matches.size(); ++i) {  // NOLINT
     if (matches[i].first - matches[j].first > 500) {
-      if (i - j >= 4) {
+      if (i - j >= n_) {
         if (!intervals.empty() && intervals.back().second > j) {  // extend
           intervals.back().second = i;
         } else {  // new
@@ -266,7 +272,7 @@ std::vector<biosoup::Overlap> MinimizerEngine::Chain(
     std::uint64_t j = it.first;
     std::uint64_t i = it.second;
 
-    if (i - j < 4) {
+    if (i - j < n_) {
       continue;
     }
 
@@ -284,7 +290,7 @@ std::vector<biosoup::Overlap> MinimizerEngine::Chain(
           std::greater<std::uint64_t>());
     }
 
-    if (indices.size() < 4) {
+    if (indices.size() < n_) {
       continue;
     }
 
@@ -292,8 +298,8 @@ std::vector<biosoup::Overlap> MinimizerEngine::Chain(
     for (std::uint64_t k = 1, l = 0; k < indices.size(); ++k) {
       if ((matches[j + indices[k]].second >> 32) -
               (matches[j + indices[k - 1]].second >> 32) >
-          10000ULL) {
-        if (k - l < 4) {
+          g_) {
+        if (k - l < n_) {
           l = k;
           continue;
         }
@@ -323,7 +329,7 @@ std::vector<biosoup::Overlap> MinimizerEngine::Chain(
         }
         lhs_matches += lhs_end - lhs_begin;
         rhs_matches += rhs_end - rhs_begin;
-        if (std::min(lhs_matches, rhs_matches) < 100UL) {
+        if (std::min(lhs_matches, rhs_matches) < m_) {
           l = k;
           continue;
         }

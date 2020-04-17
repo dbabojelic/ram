@@ -23,7 +23,11 @@ static struct option options[] = {
     {"kmer-length", required_argument, nullptr, 'k'},
     {"window-length", required_argument, nullptr, 'w'},
     {"frequency-threshold", required_argument, nullptr, 'f'},
-    {"micromize", no_argument, nullptr, 'm'},
+    {"Micromize", no_argument, nullptr, 'M'},
+    {"m", required_argument, nullptr, 'm'},
+    {"g", required_argument, nullptr, 'g'},
+    {"n", required_argument, nullptr, 'n'},
+    {"preset-options", required_argument, nullptr, 'x'},
     {"threads", required_argument, nullptr, 't'},
     {"version", no_argument, nullptr, 'v'},
     {"help", no_argument, nullptr, 'h'},
@@ -66,12 +70,17 @@ std::unique_ptr<bioparser::Parser<biosoup::Sequence>> CreateParser(
 }
 
 void Help() {
+  // clang-format off
   std::cout
       << "usage: ram [options ...] <target> [<sequences>]\n"
          "\n"
          "  # default output is stdout\n"
          "  <target>/<sequences> \n"
          "    input file in FASTA/FASTQ format (can be compressed with gzip)\n"
+         "\n"
+         "  options will be applied sequentially as specified, example:\n"
+         "  $ ram -w10 -k19 -w5 reads.fastq\n"
+         "  will result in w = 5\n"
          "\n"
          "  options:\n"
          "    -k, --kmer-length <int>\n"
@@ -83,8 +92,24 @@ void Help() {
          "    -f, --frequency-threshold <float>\n"
          "      default: 0.001\n"
          "      threshold for ignoring most frequent minimizers\n"
-         "    -m, --micromize\n"
+         "    -M, --Micromize\n"
          "      use only a portion of all minimizers\n"
+         "    -m <int>\n"
+         "      default: 100\n"
+         "      discard chains with chaining score less than <int>\n"
+         "    -g <int>\n"
+         "      default: 10000\n"
+         "      stop chain elongation if there are no minimizer withing <int>-BP\n"
+         "    -n <int>\n"
+         "      default: 4\n"
+         "      discard chains consisting of less then <int> minimizers\n"
+         "    -x, --preset-options ava|pb\n"
+         "      default: none\n"
+         "      preset options; applies multiple options at the same time;\n"
+         "      this options will be overwritten if used with other options;\n"
+         "      available preset options strings:\n"
+         "          ava: all-vs-all alignment (-k19 -w5 -m100 -g10000 -n4)\n"
+         "          map: read to reference mapping (-k19 -w10 -m40 -g5000 -n3)\n"
          "    -t, --threads <int>\n"
          "      default: 1\n"
          "      number of threads\n"
@@ -92,6 +117,7 @@ void Help() {
          "      prints the version number\n"
          "    -h, --help\n"
          "      prints the usage\n";
+  // clang-format on
 }
 
 }  // namespace
@@ -101,11 +127,15 @@ int main(int argc, char** argv) {
   std::uint32_t w = 5;
   double frequency = 0.001;
   bool micromize = false;
+  std::uint32_t m = 100;
+  std::uint64_t g = 10000;
+  std::uint8_t n = 4;
+  std::string preset = "";
   std::uint32_t num_threads = 1;
 
   std::vector<std::string> input_paths;
 
-  const char* optstr = "k:w:f:mt:h";
+  const char* optstr = "k:w:f:Mm:g:n:x:t:h";
   char arg;
   // clang-format off
   while ((arg = getopt_long(argc, argv, optstr, options, nullptr)) != -1) {
@@ -113,7 +143,21 @@ int main(int argc, char** argv) {
       case 'k': k = std::atoi(optarg); break;
       case 'w': w = std::atoi(optarg); break;
       case 'f': frequency = std::atof(optarg); break;
-      case 'm': micromize = true; break;
+      case 'M': micromize = true; break;
+      case 'm': m = std::atoi(optarg); break;
+      case 'g': g = std::atoll(optarg); break;
+      case 'n': n = std::atoi(optarg); break;
+      case 'x':
+        preset = optarg;
+        if (preset == "ava") {
+          k = 19, w = 5, m = 100, g = 10000, n = 4;
+          break;
+        } else if (preset == "map") {
+          k = 19, w = 10, m = 40, g = 5000, n = 3;
+          break;
+        }
+        Help();
+        return 1;
       case 't': num_threads = std::atoi(optarg); break;
       case 'v': std::cout << ram_version << std::endl; return 0;
       case 'h': Help(); return 0;
@@ -126,6 +170,12 @@ int main(int argc, char** argv) {
     Help();
     return 0;
   }
+
+  std::cerr << "[ram::] using options: "
+            << "k = " << k << ", w = " << w << ", f = " << frequency
+            << ", M = " << micromize << ", m = " << m << ", g = " << g
+            << ", n = " << (int)n << ", x = " << preset
+            << ", t = " << num_threads << std::endl;
 
   for (auto i = optind; i < argc; ++i) {
     input_paths.emplace_back(argv[i]);
@@ -155,7 +205,7 @@ int main(int argc, char** argv) {
   }
 
   auto thread_pool = std::make_shared<thread_pool::ThreadPool>(num_threads);
-  ram::MinimizerEngine minimizer_engine{k, w, thread_pool};
+  ram::MinimizerEngine minimizer_engine{k, w, m, g, n, thread_pool};
 
   biosoup::Timer timer{};
 

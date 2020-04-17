@@ -20,6 +20,9 @@ class MinimizerEngine {
   MinimizerEngine(
       std::uint32_t kmer_len,  // element of [1, 32]
       std::uint32_t window_len,
+      std::uint32_t chaining_score_treshold = 100,            // -m param
+      std::uint64_t chain_enlongation_stop_criteria = 10000,  // -g param
+      std::uint8_t chain_minimizer_cnt_treshold = 4,          // -n param
       std::shared_ptr<thread_pool::ThreadPool> thread_pool = nullptr);
 
   MinimizerEngine(const MinimizerEngine&) = delete;
@@ -86,6 +89,9 @@ class MinimizerEngine {
   std::uint32_t k_;
   std::uint32_t w_;
   std::uint32_t occurrence_;
+  std::uint32_t m_;
+  std::uint64_t g_;
+  std::uint8_t n_;
   std::vector<std::vector<uint128_t>> minimizers_;
   std::vector<std::unordered_map<  // kmer -> (begin, count)
       std::uint64_t, std::pair<std::uint32_t, std::uint32_t>>>
