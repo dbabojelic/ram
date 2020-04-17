@@ -47,10 +47,10 @@ MinimizerEngine::MinimizerEngine(
     std::shared_ptr<thread_pool::ThreadPool> thread_pool)
     : k_(std::min(std::max(kmer_len, 1U), 32U)),
       w_(window_len),
+      occurrence_(-1),
       m_(chaining_score_treshold),
       g_(chain_enlongation_stop_criteria),
       n_(chain_minimizer_cnt_treshold),
-      occurrence_(-1),
       minimizers_(1U << std::min(14U, 2 * k_)),
       index_(minimizers_.size()),
       thread_pool_(thread_pool ? thread_pool
