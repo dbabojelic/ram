@@ -10,11 +10,13 @@ std::atomic<std::uint32_t> biosoup::Sequence::num_objects{0};
 namespace ram {
 namespace test {
 
-class RamMinimizerEngineTest: public ::testing::Test {
+class RamMinimizerEngineTest : public ::testing::Test {
  public:
   void SetUp() override {
     biosoup::Sequence::num_objects = 0;
-    auto p = bioparser::Parser<biosoup::Sequence>::Create<bioparser::FastaParser>(RAM_DATA_PATH);  // NOLINT
+    auto p =
+        bioparser::Parser<biosoup::Sequence>::Create<bioparser::FastaParser>(
+            RAM_DATA_PATH);  // NOLINT
     s = p->Parse(-1);
     EXPECT_EQ(2, s.size());
   }

@@ -20,36 +20,38 @@ namespace {
 const char* ram_version = RAM_VERSION;
 
 static struct option options[] = {
-  {"kmer-length", required_argument, nullptr, 'k'},
-  {"window-length", required_argument, nullptr, 'w'},
-  {"frequency-threshold", required_argument, nullptr, 'f'},
-  {"micromize", no_argument, nullptr, 'm'},
-  {"threads", required_argument, nullptr, 't'},
-  {"version", no_argument, nullptr, 'v'},
-  {"help", no_argument, nullptr, 'h'},
-  {nullptr, 0, nullptr, 0}
-};
+    {"kmer-length", required_argument, nullptr, 'k'},
+    {"window-length", required_argument, nullptr, 'w'},
+    {"frequency-threshold", required_argument, nullptr, 'f'},
+    {"micromize", no_argument, nullptr, 'm'},
+    {"threads", required_argument, nullptr, 't'},
+    {"version", no_argument, nullptr, 'v'},
+    {"help", no_argument, nullptr, 'h'},
+    {nullptr, 0, nullptr, 0}};
 
-std::unique_ptr<bioparser::Parser<biosoup::Sequence>>
-    CreateParser(const std::string& path) {
-  auto is_suffix = [] (const std::string& s, const std::string& suff) {
-    return s.size() < suff.size() ? false :
-        s.compare(s.size() - suff.size(), suff.size(), suff) == 0;
+std::unique_ptr<bioparser::Parser<biosoup::Sequence>> CreateParser(
+    const std::string& path) {
+  auto is_suffix = [](const std::string& s, const std::string& suff) {
+    return s.size() < suff.size()
+               ? false
+               : s.compare(s.size() - suff.size(), suff.size(), suff) == 0;
   };
 
-  if (is_suffix(path, ".fasta")    || is_suffix(path, ".fa") ||
+  if (is_suffix(path, ".fasta") || is_suffix(path, ".fa") ||
       is_suffix(path, ".fasta.gz") || is_suffix(path, ".fa.gz")) {
     try {
-      return bioparser::Parser<biosoup::Sequence>::Create<bioparser::FastaParser>(path);  // NOLINT
+      return bioparser::Parser<biosoup::Sequence>::Create<
+          bioparser::FastaParser>(path);  // NOLINT
     } catch (const std::invalid_argument& exception) {
       std::cerr << exception.what() << std::endl;
       return nullptr;
     }
   }
-  if (is_suffix(path, ".fastq")    || is_suffix(path, ".fq") ||
+  if (is_suffix(path, ".fastq") || is_suffix(path, ".fq") ||
       is_suffix(path, ".fastq.gz") || is_suffix(path, ".fq.gz")) {
     try {
-      return bioparser::Parser<biosoup::Sequence>::Create<bioparser::FastqParser>(path);  // NOLINT
+      return bioparser::Parser<biosoup::Sequence>::Create<
+          bioparser::FastqParser>(path);  // NOLINT
     } catch (const std::invalid_argument& exception) {
       std::cerr << exception.what() << std::endl;
       return nullptr;
@@ -64,32 +66,32 @@ std::unique_ptr<bioparser::Parser<biosoup::Sequence>>
 }
 
 void Help() {
-  std::cout <<
-      "usage: ram [options ...] <target> [<sequences>]\n"
-      "\n"
-      "  # default output is stdout\n"
-      "  <target>/<sequences> \n"
-      "    input file in FASTA/FASTQ format (can be compressed with gzip)\n"
-      "\n"
-      "  options:\n"
-      "    -k, --kmer-length <int>\n"
-      "      default: 15\n"
-      "      length of minimizers\n"
-      "    -w, --window-length <int>\n"
-      "      default: 5\n"
-      "      length of sliding window from which minimizers are found\n"
-      "    -f, --frequency-threshold <float>\n"
-      "      default: 0.001\n"
-      "      threshold for ignoring most frequent minimizers\n"
-      "    -m, --micromize\n"
-      "      use only a portion of all minimizers\n"
-      "    -t, --threads <int>\n"
-      "      default: 1\n"
-      "      number of threads\n"
-      "    --version\n"
-      "      prints the version number\n"
-      "    -h, --help\n"
-      "      prints the usage\n";
+  std::cout
+      << "usage: ram [options ...] <target> [<sequences>]\n"
+         "\n"
+         "  # default output is stdout\n"
+         "  <target>/<sequences> \n"
+         "    input file in FASTA/FASTQ format (can be compressed with gzip)\n"
+         "\n"
+         "  options:\n"
+         "    -k, --kmer-length <int>\n"
+         "      default: 15\n"
+         "      length of minimizers\n"
+         "    -w, --window-length <int>\n"
+         "      default: 5\n"
+         "      length of sliding window from which minimizers are found\n"
+         "    -f, --frequency-threshold <float>\n"
+         "      default: 0.001\n"
+         "      threshold for ignoring most frequent minimizers\n"
+         "    -m, --micromize\n"
+         "      use only a portion of all minimizers\n"
+         "    -t, --threads <int>\n"
+         "      default: 1\n"
+         "      number of threads\n"
+         "    --version\n"
+         "      prints the version number\n"
+         "    -h, --help\n"
+         "      prints the usage\n";
 }
 
 }  // namespace
@@ -105,6 +107,7 @@ int main(int argc, char** argv) {
 
   const char* optstr = "k:w:f:mt:h";
   char arg;
+  // clang-format off
   while ((arg = getopt_long(argc, argv, optstr, options, nullptr)) != -1) {
     switch (arg) {
       case 'k': k = std::atoi(optarg); break;
@@ -117,6 +120,7 @@ int main(int argc, char** argv) {
       default: return 1;
     }
   }
+  // clang-format on
 
   if (argc == 1) {
     Help();
@@ -171,17 +175,15 @@ int main(int argc, char** argv) {
     }
 
     std::cerr << "[ram::] parsed " << targets.size() << " targets "
-              << std::fixed << timer.Stop() << "s"
-              << std::endl;
+              << std::fixed << timer.Stop() << "s" << std::endl;
 
     timer.Start();
 
     minimizer_engine.Minimize(targets.begin(), targets.end());
     minimizer_engine.Filter(frequency);
 
-    std::cerr << "[ram::] minimized targets "
-              << std::fixed << timer.Stop() << "s"
-              << std::endl;
+    std::cerr << "[ram::] minimized targets " << std::fixed << timer.Stop()
+              << "s" << std::endl;
 
     std::uint64_t num_targets = biosoup::Sequence::num_objects;
     biosoup::Sequence::num_objects = 0;
@@ -204,20 +206,21 @@ int main(int argc, char** argv) {
       std::vector<std::future<std::vector<biosoup::Overlap>>> futures;
       for (const auto& it : sequences) {
         futures.emplace_back(thread_pool->Submit(
-            [&] (const std::unique_ptr<biosoup::Sequence>& sequence)
+            [&](const std::unique_ptr<biosoup::Sequence>& sequence)
                 -> std::vector<biosoup::Overlap> {
               return minimizer_engine.Map(sequence, is_ava, is_ava, micromize);
             },
             std::ref(it)));
       }
 
-      biosoup::ProgressBar bar{
-          static_cast<std::uint32_t>(sequences.size()), 16};
+      biosoup::ProgressBar bar{static_cast<std::uint32_t>(sequences.size()),
+                               16};
 
       for (auto& it : futures) {
         std::uint64_t rhs_offset = targets.front()->id;
         std::uint64_t lhs_offset = sequences.front()->id;
         for (const auto& jt : it.get()) {
+          // clang-format off
           std::cout << sequences[(jt.lhs_id >> 1) - lhs_offset]->name << "\t"
                     << sequences[(jt.lhs_id >> 1) - lhs_offset]->data.size() << "\t"  // NOLINT
                     << jt.lhs_begin << "\t"
@@ -233,12 +236,12 @@ int main(int argc, char** argv) {
                           jt.rhs_end - jt.rhs_begin) << "\t"
                     << 255
                     << std::endl;
+          // clang-format on
         }
 
         if (++bar) {
           std::cerr << "[ram::] mapped " << bar.event_counter() << " sequences "
-                    << "[" << bar << "] "
-                    << std::fixed << timer.Lap() << "s"
+                    << "[" << bar << "] " << std::fixed << timer.Lap() << "s"
                     << "\r";
         }
       }
