@@ -1,7 +1,6 @@
 # Ram
+[![Build status for c++/clang++](https://travis-ci.com/dbabojelic/ram.svg?branch=master)](https://travis-ci.org/dbabojelic/ram)
 
-[![Latest GitHub release](https://img.shields.io/github/release/lbcb-sci/ram.svg)](https://github.com/lbcb-sci/ram/releases/latest)
-[![Build status for c++/clang++](https://travis-ci.org/lbcb-sci/ram.svg?branch=master)](https://travis-ci.org/lbcb-sci/ram)
 
 Ram is a c++ implementation of [minimap](https://github.com/lh3/minimap) with few modifications.
 
@@ -9,7 +8,7 @@ Ram is a c++ implementation of [minimap](https://github.com/lh3/minimap) with fe
 
 To build ram run the following commands:
 ```bash
-git clone --recursive https://github.com/lbcb-sci/ram.git ram
+git clone --recursive https://github.com/dbabojelic/ram.git ram
 cd ram && mkdir build && cd build
 cmake -Dram_build_executable=ON -DCMAKE_BUILD_TYPE=Release .. && make
 ./bin/ram
@@ -62,7 +61,7 @@ target_link_libraries(<your_exe> ram)
 To build ram unit tests run the following commands:
 
 ```bash
-git clone https://github.com/lbcb-sci/ram.git ram
+git clone https://github.com/dbabojelic/ram.git ram
 cd ram && mkdir build && cd build
 cmake -Dram_build_tests=ON -DCMAKE_BUILD_TYPE=Release .. && make
 ./bin/ram_test
