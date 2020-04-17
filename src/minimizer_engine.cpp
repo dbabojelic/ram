@@ -154,7 +154,7 @@ void MinimizerEngine::Filter(double frequency) {
 
 std::vector<biosoup::Overlap> MinimizerEngine::Map(
     const std::unique_ptr<biosoup::Sequence>& sequence, bool avoid_equal,
-    bool avoid_symmetric, bool micromize) const {
+    bool avoid_symmetric, bool micromize, std::uint8_t N) const {
   auto sketch = Minimize(sequence, micromize);
   if (sketch.empty()) {
     return std::vector<biosoup::Overlap>{};
@@ -198,7 +198,8 @@ std::vector<biosoup::Overlap> MinimizerEngine::Map(
 
 std::vector<biosoup::Overlap> MinimizerEngine::Map(
     const std::unique_ptr<biosoup::Sequence>& lhs,
-    const std::unique_ptr<biosoup::Sequence>& rhs, bool micromize) const {
+    const std::unique_ptr<biosoup::Sequence>& rhs, bool micromize,
+    std::uint8_t N) const {
   auto lhs_sketch = Minimize(lhs, micromize);
   if (lhs_sketch.empty()) {
     return std::vector<biosoup::Overlap>{};
@@ -358,7 +359,8 @@ std::vector<biosoup::Overlap> MinimizerEngine::Chain(
 }
 
 std::vector<MinimizerEngine::uint128_t> MinimizerEngine::Minimize(
-    const std::unique_ptr<biosoup::Sequence>& sequence, bool micromize) const {
+    const std::unique_ptr<biosoup::Sequence>& sequence, bool micromize,
+    std::uint8_t N) const {
   if (sequence->data.size() < k_) {
     return std::vector<uint128_t>{};
   }
@@ -429,8 +431,11 @@ std::vector<MinimizerEngine::uint128_t> MinimizerEngine::Minimize(
   }
 
   if (micromize) {
-    RadixSort(dst.begin(), dst.end(), k_ * 2, ::First);
-    dst.resize(sequence->data.size() / k_);
+    std::uint32_t take = sequence->data.size() / k_;
+    if (take + 2 * N < dst.size()) N = 0;
+    RadixSort(dst.begin() + N, dst.end() - N, k_ * 2, ::First);
+    dst.insert(dst.begin() + take - N, dst.end() - N, dst.end());
+    dst.resize(take);
   }
 
   return dst;
