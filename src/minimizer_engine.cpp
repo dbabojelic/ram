@@ -432,10 +432,13 @@ std::vector<MinimizerEngine::uint128_t> MinimizerEngine::Minimize(
 
   if (micromize) {
     std::uint32_t take = sequence->data.size() / k_;
-    if (take + 2 * N < dst.size()) N = 0;
-    RadixSort(dst.begin() + N, dst.end() - N, k_ * 2, ::First);
-    dst.insert(dst.begin() + take - N, dst.end() - N, dst.end());
-    dst.resize(take);
+    if (take < dst.size()) {
+      if (2 * N <= dst.size())
+        RadixSort(dst.begin() + N, dst.end() - N, k_ * 2, ::First);
+      if (N < take)
+        dst.insert(dst.begin() + take - N, dst.end() - N, dst.end());
+      dst.resize(take);
+    }
   }
 
   return dst;
