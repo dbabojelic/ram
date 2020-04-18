@@ -2,6 +2,7 @@
 
 #include "ram/minimizer_engine.hpp"
 
+#include <cassert>
 #include <deque>
 #include <stdexcept>
 
@@ -433,10 +434,14 @@ std::vector<MinimizerEngine::uint128_t> MinimizerEngine::Minimize(
   if (micromize) {
     std::uint32_t take = sequence->data.size() / k_;
     if (take < dst.size()) {
-      if (2 * N <= dst.size())
+      if (2 * N <= dst.size()) {
+        assert(dst.begin() + N <= dst.end() - N);
         RadixSort(dst.begin() + N, dst.end() - N, k_ * 2, ::First);
-      if (N < take)
+      }
+      if (N < take) {
+        assert(dst.begin() + take - N <= dst.end() - N);
         dst.insert(dst.begin() + take - N, dst.end() - N, dst.end());
+      }
       dst.resize(take);
     }
   }
