@@ -276,14 +276,9 @@ int main(int argc, char** argv) {
       std::uint64_t lhs_offset = sequences.front()->id;
       for (auto& it : futures) {
         for (const auto& jt : it.get()) {
-<<<<<<< HEAD
+          // clang-format off
           std::cout << sequences[jt.lhs_id - lhs_offset]->name << "\t"
                     << sequences[jt.lhs_id - lhs_offset]->data.size() << "\t"
-=======
-          // clang-format off
-          std::cout << sequences[(jt.lhs_id >> 1) - lhs_offset]->name << "\t"
-                    << sequences[(jt.lhs_id >> 1) - lhs_offset]->data.size() << "\t"  // NOLINT
->>>>>>> clang format file added
                     << jt.lhs_begin << "\t"
                     << jt.lhs_end << "\t"
                     << (jt.strand ? "+" : "-") << "\t"
