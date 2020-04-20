@@ -155,7 +155,7 @@ void MinimizerEngine::Filter(double frequency) {
 std::vector<biosoup::Overlap> MinimizerEngine::Map(
     const std::unique_ptr<biosoup::Sequence>& sequence, bool avoid_equal,
     bool avoid_symmetric, bool micromize, std::uint8_t N) const {
-  auto sketch = Minimize(sequence, micromize);
+  auto sketch = Minimize(sequence, micromize, N);
   if (sketch.empty()) {
     return std::vector<biosoup::Overlap>{};
   }
@@ -200,7 +200,7 @@ std::vector<biosoup::Overlap> MinimizerEngine::Map(
     const std::unique_ptr<biosoup::Sequence>& lhs,
     const std::unique_ptr<biosoup::Sequence>& rhs, bool micromize,
     std::uint8_t N) const {
-  auto lhs_sketch = Minimize(lhs, micromize);
+  auto lhs_sketch = Minimize(lhs, micromize, N);
   if (lhs_sketch.empty()) {
     return std::vector<biosoup::Overlap>{};
   }
@@ -440,7 +440,6 @@ std::vector<MinimizerEngine::uint128_t> MinimizerEngine::Minimize(
       dst.resize(take);
     }
   }
-
   return dst;
 }
 
