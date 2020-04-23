@@ -2,7 +2,9 @@
 
 #include "ram/minimizer_engine.hpp"
 
+#include <cassert>
 #include <deque>
+#include <iostream>
 #include <stdexcept>
 
 namespace {
@@ -43,7 +45,7 @@ MinimizerEngine::MinimizerEngine(
     std::uint32_t kmer_len, std::uint32_t window_len,
     std::uint32_t chaining_score_treshold,
     std::uint64_t chain_enlongation_stop_criteria,
-    std::uint8_t chain_minimizer_cnt_treshold,
+    std::uint8_t chain_minimizer_cnt_treshold, std::uint32_t best_n,
     std::shared_ptr<thread_pool::ThreadPool> thread_pool)
     : k_(std::min(std::max(kmer_len, 1U), 32U)),
       w_(window_len),
@@ -51,6 +53,7 @@ MinimizerEngine::MinimizerEngine(
       m_(chaining_score_treshold),
       g_(chain_enlongation_stop_criteria),
       n_(chain_minimizer_cnt_treshold),
+      best_n_(best_n),
       minimizers_(1U << std::min(14U, 2 * k_)),
       index_(minimizers_.size()),
       thread_pool_(thread_pool ? thread_pool
@@ -354,6 +357,16 @@ std::vector<biosoup::Overlap> MinimizerEngine::Chain(
         l = k;
       }
     }
+  }
+
+  if (best_n_ && best_n_ < dst.size()) {
+    // take only best_n_ overlaps
+    std::sort(
+        dst.begin(), dst.end(),
+        [](const biosoup::Overlap& lhs, const biosoup::Overlap& rhs) -> bool {
+          return lhs.score > rhs.score;
+        });
+    dst.resize(best_n_);
   }
   return dst;
 }

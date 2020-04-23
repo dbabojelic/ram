@@ -1,4 +1,6 @@
 # Compiled Object files
 build/
+cmake-build-debug/
 .vscode/
+.idea/
 test/data/*.fasta

@@ -107,13 +107,16 @@ void Help() {
          "    -n <int>\n"
          "      default: 4\n"
          "      discard chains consisting of less then <int> minimizers\n"
-         "    -x, --preset-options ava|pb\n"
+         "    -b --best-n <int>\n"
+         "      default: 0\n"
+         "      choose only <int> best hits; if zero all hits will be chosen\n"
+         "    -x, --preset-options ava|map\n"
          "      default: none\n"
          "      preset options; applies multiple options at the same time;\n"
          "      this options will be overwritten if used with other options;\n"
          "      available preset options strings:\n"
          "          ava: all-vs-all alignment (-k19 -w5 -m100 -g10000 -n4)\n"
-         "          map: read to reference mapping (-k19 -w10 -m40 -g5000 -n3)\n"
+         "          map: read to reference mapping (-k19 -w10 -m40 -g5000 -n3 -b5)\n"
          "    -t, --threads <int>\n"
          "      default: 1\n"
          "      number of threads\n"
@@ -135,12 +138,13 @@ int main(int argc, char** argv) {
   std::uint32_t m = 100;
   std::uint64_t g = 10000;
   std::uint8_t n = 4;
+  std::uint32_t b = 0;
   std::string preset = "";
   std::uint32_t num_threads = 1;
 
   std::vector<std::string> input_paths;
 
-  const char* optstr = "k:w:f:MN:m:g:n:x:t:h";
+  const char* optstr = "k:w:f:MN:m:g:n:b:x:t:h";
   char arg;
   // clang-format off
   while ((arg = getopt_long(argc, argv, optstr, options, nullptr)) != -1) {
@@ -153,13 +157,14 @@ int main(int argc, char** argv) {
       case 'm': m = std::atoi(optarg); break;
       case 'g': g = std::atoll(optarg); break;
       case 'n': n = std::atoi(optarg); break;
+      case 'b': b = std::atoi(optarg); break;
       case 'x':
         preset = optarg;
         if (preset == "ava") {
           k = 19, w = 5, m = 100, g = 10000, n = 4;
           break;
         } else if (preset == "map") {
-          k = 19, w = 10, m = 40, g = 5000, n = 3;
+          k = 19, w = 10, m = 40, g = 5000, n = 3; b = 5;
           break;
         }
         Help();
@@ -180,8 +185,8 @@ int main(int argc, char** argv) {
   std::cerr << "[ram::] using options: "
             << "k = " << k << ", w = " << w << ", f = " << frequency
             << ", M = " << micromize << ", N = " << (int)N << ", m = " << m
-            << ", g = " << g << ", n = " << (int)n << ", x = " << preset
-            << ", t = " << num_threads << std::endl;
+            << ", g = " << g << ", n = " << (int)n << ", b = " << b
+            << ", x = " << preset << ", t = " << num_threads << std::endl;
 
   for (auto i = optind; i < argc; ++i) {
     input_paths.emplace_back(argv[i]);
@@ -211,7 +216,7 @@ int main(int argc, char** argv) {
   }
 
   auto thread_pool = std::make_shared<thread_pool::ThreadPool>(num_threads);
-  ram::MinimizerEngine minimizer_engine{k, w, m, g, n, thread_pool};
+  ram::MinimizerEngine minimizer_engine{k, w, m, g, n, b, thread_pool};
 
   biosoup::Timer timer{};
 
