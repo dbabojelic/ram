@@ -22,12 +22,14 @@ const char* ram_version = RAM_VERSION;
 static struct option options[] = {
     {"kmer-length", required_argument, nullptr, 'k'},
     {"window-length", required_argument, nullptr, 'w'},
+    {"hpc", no_argument, nullptr, 'H'},
     {"frequency-threshold", required_argument, nullptr, 'f'},
     {"Micromize", no_argument, nullptr, 'M'},
     {"Micromize-extend", no_argument, nullptr, 'N'},
     {"m", required_argument, nullptr, 'm'},
     {"g", required_argument, nullptr, 'g'},
     {"n", required_argument, nullptr, 'n'},
+    {"best-n", required_argument, nullptr, 'b'},
     {"preset-options", required_argument, nullptr, 'x'},
     {"threads", required_argument, nullptr, 't'},
     {"version", no_argument, nullptr, 'v'},
@@ -90,6 +92,8 @@ void Help() {
          "    -w, --window-length <int>\n"
          "      default: 5\n"
          "      length of sliding window from which minimizers are found\n"
+         "    -H, --hpc\n"
+         "      Use homopolymer-compressed (HPC) minimizers\n"
          "    -f, --frequency-threshold <float>\n"
          "      default: 0.001\n"
          "      threshold for ignoring most frequent minimizers\n"
@@ -132,6 +136,7 @@ void Help() {
 int main(int argc, char** argv) {
   std::uint32_t k = 15;
   std::uint32_t w = 5;
+  bool hpc = false;
   double frequency = 0.001;
   bool micromize = false;
   std::uint8_t N = 0;
@@ -144,13 +149,14 @@ int main(int argc, char** argv) {
 
   std::vector<std::string> input_paths;
 
-  const char* optstr = "k:w:f:MN:m:g:n:b:x:t:h";
+  const char* optstr = "k:w:Hf:MN:m:g:n:b:x:t:h";
   char arg;
   // clang-format off
   while ((arg = getopt_long(argc, argv, optstr, options, nullptr)) != -1) {
     switch (arg) {
       case 'k': k = std::atoi(optarg); break;
       case 'w': w = std::atoi(optarg); break;
+      case 'H': hpc = true; break;
       case 'f': frequency = std::atof(optarg); break;
       case 'M': micromize = true; break;
       case 'N': N = std::atoi(optarg); break;
@@ -183,10 +189,11 @@ int main(int argc, char** argv) {
   }
 
   std::cerr << "[ram::] using options: "
-            << "k = " << k << ", w = " << w << ", f = " << frequency
-            << ", M = " << micromize << ", N = " << (int)N << ", m = " << m
-            << ", g = " << g << ", n = " << (int)n << ", b = " << b
-            << ", x = " << preset << ", t = " << num_threads << std::endl;
+            << "k = " << k << ", w = " << w << ", hpc: " << hpc
+            << ", f = " << frequency << ", M = " << micromize
+            << ", N = " << (int)N << ", m = " << m << ", g = " << g
+            << ", n = " << (int)n << ", b = " << b << ", x = " << preset
+            << ", t = " << num_threads << std::endl;
 
   for (auto i = optind; i < argc; ++i) {
     input_paths.emplace_back(argv[i]);
@@ -216,7 +223,7 @@ int main(int argc, char** argv) {
   }
 
   auto thread_pool = std::make_shared<thread_pool::ThreadPool>(num_threads);
-  ram::MinimizerEngine minimizer_engine{k, w, m, g, n, b, thread_pool};
+  ram::MinimizerEngine minimizer_engine{k, w, m, g, n, b, hpc, thread_pool};
 
   biosoup::Timer timer{};
 

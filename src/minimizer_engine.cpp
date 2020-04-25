@@ -45,7 +45,7 @@ MinimizerEngine::MinimizerEngine(
     std::uint32_t kmer_len, std::uint32_t window_len,
     std::uint32_t chaining_score_treshold,
     std::uint64_t chain_enlongation_stop_criteria,
-    std::uint8_t chain_minimizer_cnt_treshold, std::uint32_t best_n,
+    std::uint8_t chain_minimizer_cnt_treshold, std::uint32_t best_n, bool hpc,
     std::shared_ptr<thread_pool::ThreadPool> thread_pool)
     : k_(std::min(std::max(kmer_len, 1U), 32U)),
       w_(window_len),
@@ -54,6 +54,7 @@ MinimizerEngine::MinimizerEngine(
       g_(chain_enlongation_stop_criteria),
       n_(chain_minimizer_cnt_treshold),
       best_n_(best_n),
+      hpc_(hpc),
       minimizers_(1U << std::min(14U, 2 * k_)),
       index_(minimizers_.size()),
       thread_pool_(thread_pool ? thread_pool
@@ -413,22 +414,41 @@ std::vector<MinimizerEngine::uint128_t> MinimizerEngine::Minimize(
 
   std::vector<uint128_t> dst;
 
-  for (std::uint32_t i = 0; i < sequence->data.size(); ++i) {
+  for (std::uint32_t i = 0, win_span = 0, kmer_span = 0, base_cnt = 0;
+       i < sequence->data.size(); ++i, ++win_span, ++kmer_span) {
     std::uint64_t c = kCoder[sequence->data[i]];
     if (c == 255ULL) {
       throw std::invalid_argument(
           "[ram::MinimizerEngine::Minimize] error: invalid character");
     }
-    minimizer = ((minimizer << 2) | c) & mask;
-    reverse_minimizer = (reverse_minimizer >> 2) | ((c ^ 3) << shift);
-    if (i >= k_ - 1U) {
-      if (minimizer < reverse_minimizer) {
-        window_add(hash(minimizer), (i - (k_ - 1U)) << 1 | 0);
-      } else if (minimizer > reverse_minimizer) {
-        window_add(hash(reverse_minimizer), (i - (k_ - 1U)) << 1 | 1);
+
+    // skip homopoly
+    if (hpc_ && i && kCoder[sequence->data[i - 1]] == c) {
+      continue;
+    }
+
+    // found new char
+    base_cnt++;
+
+    // remove last from kmer
+    if (base_cnt > k_) {
+      kmer_span--;
+      if (hpc_) {
+        auto last_c = kCoder[sequence->data[i - kmer_span - 1]];
+        while (kCoder[sequence->data[i - kmer_span]] == last_c) kmer_span--;
       }
     }
-    if (i >= (k_ - 1U) + (w_ - 1U)) {
+
+    minimizer = ((minimizer << 2) | c) & mask;
+    reverse_minimizer = (reverse_minimizer >> 2) | ((c ^ 3) << shift);
+    if (base_cnt >= k_) {
+      if (minimizer < reverse_minimizer) {
+        window_add(hash(minimizer), (i - (kmer_span)) << 1 | 0);
+      } else if (minimizer > reverse_minimizer) {
+        window_add(hash(reverse_minimizer), (i - (kmer_span)) << 1 | 1);
+      }
+    }
+    if (base_cnt >= (k_) + (w_ - 1U)) {
       for (auto it = window.begin(); it != window.end(); ++it) {
         if (it->first != window.front().first) {
           break;
@@ -439,7 +459,12 @@ std::vector<MinimizerEngine::uint128_t> MinimizerEngine::Minimize(
         dst.emplace_back(it->first, id | it->second);
         it->second |= is_stored;
       }
-      window_update(i - (k_ - 1U) - (w_ - 1U) + 1);
+      win_span--;
+      if (hpc_) {
+        auto last_c = kCoder[sequence->data[i - win_span - 1]];
+        while (kCoder[sequence->data[i - win_span]] == last_c) win_span--;
+      }
+      window_update(i - win_span);
     }
   }
 
