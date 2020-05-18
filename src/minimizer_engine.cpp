@@ -560,5 +560,12 @@ std::vector<std::uint64_t> MinimizerEngine::LongestSubsequence(
 
   return dst;
 }
+uint64_t MinimizerEngine::GetMinimizerIndexSize() const {
+  uint64_t ret = 0;
+  for (const auto& it : minimizers_) {
+    ret += it.size();
+  }
+  return ret;
+}
 
 }  // namespace ram

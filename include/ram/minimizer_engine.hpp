@@ -57,6 +57,8 @@ class MinimizerEngine {
       const std::unique_ptr<biosoup::Sequence>& rhs, bool micromize = false,
       std::uint8_t N = 0) const;  // only lhs
 
+  uint64_t GetMinimizerIndexSize() const;
+
  private:
   using uint128_t = std::pair<std::uint64_t, std::uint64_t>;
 

@@ -252,6 +252,9 @@ int main(int argc, char** argv) {
 
     std::cerr << "[ram::] minimized targets " << std::fixed << timer.Stop()
               << "s" << std::endl;
+    std::cerr << "[ram::] targets produced "
+              << minimizer_engine.GetMinimizerIndexSize() << " minimizers"
+              << std::endl;
 
     std::uint64_t num_targets = biosoup::Sequence::num_objects;
     biosoup::Sequence::num_objects = 0;
