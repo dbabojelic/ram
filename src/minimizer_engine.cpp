@@ -46,7 +46,7 @@ MinimizerEngine::MinimizerEngine(
     std::uint32_t chaining_score_treshold,
     std::uint64_t chain_enlongation_stop_criteria,
     std::uint8_t chain_minimizer_cnt_treshold, std::uint32_t best_n, bool hpc,
-    std::shared_ptr<thread_pool::ThreadPool> thread_pool)
+    bool robust_winnowing, std::shared_ptr<thread_pool::ThreadPool> thread_pool)
     : k_(std::min(std::max(kmer_len, 1U), 32U)),
       w_(window_len),
       occurrence_(-1),
@@ -54,6 +54,7 @@ MinimizerEngine::MinimizerEngine(
       g_(chain_enlongation_stop_criteria),
       n_(chain_minimizer_cnt_treshold),
       best_n_(best_n),
+      robust_winnowing_(robust_winnowing),
       hpc_(hpc),
       minimizers_(1U << std::min(14U, 2 * k_)),
       index_(minimizers_.size()),
@@ -406,6 +407,12 @@ std::vector<MinimizerEngine::uint128_t> MinimizerEngine::Minimize(
     }
   };
 
+  auto robust_pop = [&]() -> void {
+    while ((int)window.size() > 1 && window.front().first == window[1].first) {
+      window.pop_front();
+    }
+  };
+
   std::uint64_t shift = (k_ - 1) * 2;
   std::uint64_t minimizer = 0;
   std::uint64_t reverse_minimizer = 0;
@@ -449,7 +456,9 @@ std::vector<MinimizerEngine::uint128_t> MinimizerEngine::Minimize(
       }
     }
     if (base_cnt >= (k_) + (w_ - 1U)) {
-      for (auto it = window.begin(); it != window.end(); ++it) {
+      auto stop = window.end();
+      if (!window.empty() && robust_winnowing_) stop = window.begin() + 1;
+      for (auto it = window.begin(); it != stop; ++it) {
         if (it->first != window.front().first) {
           break;
         }
@@ -465,6 +474,7 @@ std::vector<MinimizerEngine::uint128_t> MinimizerEngine::Minimize(
         while (kCoder[sequence->data[i - win_span]] == last_c) win_span--;
       }
       window_update(i - win_span);
+      if (robust_winnowing_) robust_pop();
     }
   }
 

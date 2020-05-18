@@ -24,6 +24,7 @@ class MinimizerEngine {
       std::uint64_t chain_enlongation_stop_criteria = 10000,  // -g param
       std::uint8_t chain_minimizer_cnt_treshold = 4,          // -n param
       std::uint32_t best_n = 0,                               // -b param
+      bool robust_winnowing = false,                          // -r param
       bool hpc = false,  // use homopolymer-compressed minimizers
       std::shared_ptr<thread_pool::ThreadPool> thread_pool = nullptr);
 
@@ -97,6 +98,7 @@ class MinimizerEngine {
   std::uint64_t g_;
   std::uint8_t n_;
   std::uint32_t best_n_;
+  bool robust_winnowing_;
   bool hpc_;
   std::vector<std::vector<uint128_t>> minimizers_;
   std::vector<std::unordered_map<  // kmer -> (begin, count)
