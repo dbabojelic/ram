@@ -401,17 +401,22 @@ std::vector<MinimizerEngine::uint128_t> MinimizerEngine::Minimize(
     }
     window.emplace_back(minimizer, location);
   };
-  auto window_update = [&](std::uint32_t position) -> void {
-    while (!window.empty() && (window.front().second << 32 >> 33) < position) {
-      window.pop_front();
-    }
-  };
-
   auto robust_pop = [&]() -> void {
     while ((int)window.size() > 1 && window.front().first == window[1].first) {
       window.pop_front();
     }
   };
+  auto window_update = [&](std::uint32_t position) -> void {
+    bool popped = false;
+    while (!window.empty() && (window.front().second << 32 >> 33) < position) {
+      window.pop_front();
+      popped = true;
+    }
+    if (robust_winnowing_ && popped) {
+      robust_pop();
+    }
+  };
+
 
   std::uint64_t shift = (k_ - 1) * 2;
   std::uint64_t minimizer = 0;
@@ -474,7 +479,6 @@ std::vector<MinimizerEngine::uint128_t> MinimizerEngine::Minimize(
         while (kCoder[sequence->data[i - win_span]] == last_c) win_span--;
       }
       window_update(i - win_span);
-      if (robust_winnowing_) robust_pop();
     }
   }
 
