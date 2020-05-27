@@ -31,6 +31,7 @@ static struct option options[] = {
     {"g", required_argument, nullptr, 'g'},
     {"n", required_argument, nullptr, 'n'},
     {"best-n", required_argument, nullptr, 'b'},
+    {"reduce-win-sz", required_argument, nullptr, 'i'},
     {"preset-options", required_argument, nullptr, 'x'},
     {"threads", required_argument, nullptr, 't'},
     {"version", no_argument, nullptr, 'v'},
@@ -117,6 +118,9 @@ void Help() {
          "    -b --best-n <int>\n"
          "      default: 0\n"
          "      choose only <int> best hits; if zero all hits will be chosen\n"
+         "    -i, --reduce-win-sz <int>\n"
+         "      default: 0\n"
+         "      if zero does nothing; otherwise one more hierarchical level of minimizing procedure is applied (with given window size)\n"
          "    -x, --preset-options ava|map\n"
          "      default: none\n"
          "      preset options; applies multiple options at the same time;\n"
@@ -148,12 +152,13 @@ int main(int argc, char** argv) {
   std::uint64_t g = 10000;
   std::uint8_t n = 4;
   std::uint32_t b = 0;
+  std::uint32_t reduce_win_sz = 0;
   std::string preset = "";
   std::uint32_t num_threads = 1;
 
   std::vector<std::string> input_paths;
 
-  const char* optstr = "k:w:Hrf:MN:m:g:n:b:x:t:h";
+  const char* optstr = "k:w:Hrf:MN:m:g:n:b:i:x:t:h";
   char arg;
   // clang-format off
   while ((arg = getopt_long(argc, argv, optstr, options, nullptr)) != -1) {
@@ -169,6 +174,7 @@ int main(int argc, char** argv) {
       case 'g': g = std::atoll(optarg); break;
       case 'n': n = std::atoi(optarg); break;
       case 'b': b = std::atoi(optarg); break;
+      case 'i': reduce_win_sz = std::atoi(optarg); break;
       case 'x':
         preset = optarg;
         if (preset == "ava") {
@@ -198,7 +204,8 @@ int main(int argc, char** argv) {
             << ", robust_win: " << robust_winnowing << ", f = " << frequency
             << ", M = " << micromize << ", N = " << (int)N << ", m = " << m
             << ", g = " << g << ", n = " << (int)n << ", b = " << b
-            << ", x = " << preset << ", t = " << num_threads << std::endl;
+            << ", reduce_win_sz = " << reduce_win_sz << ", x = " << preset
+            << ", t = " << num_threads << std::endl;
 
   for (auto i = optind; i < argc; ++i) {
     input_paths.emplace_back(argv[i]);
@@ -229,7 +236,7 @@ int main(int argc, char** argv) {
 
   auto thread_pool = std::make_shared<thread_pool::ThreadPool>(num_threads);
   ram::MinimizerEngine minimizer_engine{
-      k, w, m, g, n, b, robust_winnowing, hpc, thread_pool};
+      k, w, m, g, n, b, reduce_win_sz, robust_winnowing, hpc, thread_pool};
 
   biosoup::Timer timer{};
 

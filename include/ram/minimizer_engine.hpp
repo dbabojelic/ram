@@ -24,6 +24,7 @@ class MinimizerEngine {
       std::uint64_t chain_enlongation_stop_criteria = 10000,  // -g param
       std::uint8_t chain_minimizer_cnt_treshold = 4,          // -n param
       std::uint32_t best_n = 0,                               // -b param
+      std::uint32_t reduce_win_sz = 0,
       bool robust_winnowing = false,                          // -r param
       bool hpc = false,  // use homopolymer-compressed minimizers
       std::shared_ptr<thread_pool::ThreadPool> thread_pool = nullptr);
@@ -79,6 +80,8 @@ class MinimizerEngine {
       const std::unique_ptr<biosoup::Sequence>& sequence,
       bool micromize = false, std::uint8_t N = 0) const;
 
+  std::vector<uint128_t> Reduce(const std::vector<uint128_t>& dst) const;
+
   template <typename T>
   static void RadixSort(  // any uint128_t
       std::vector<uint128_t>::iterator begin,
@@ -98,6 +101,7 @@ class MinimizerEngine {
   std::uint64_t g_;
   std::uint8_t n_;
   std::uint32_t best_n_;
+  std::uint32_t reduce_win_sz_;
   bool robust_winnowing_;
   bool hpc_;
   std::vector<std::vector<uint128_t>> minimizers_;
