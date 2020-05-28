@@ -45,7 +45,7 @@ MinimizerEngine::MinimizerEngine(
     std::uint32_t kmer_len, std::uint32_t window_len,
     std::uint32_t chaining_score_treshold,
     std::uint64_t chain_enlongation_stop_criteria,
-    std::uint8_t chain_minimizer_cnt_treshold, std::uint32_t best_n, bool hpc,
+    std::uint8_t chain_minimizer_cnt_treshold, std::uint32_t best_n, std::uint32_t reduce_win_sz, bool hpc,
     bool robust_winnowing, std::shared_ptr<thread_pool::ThreadPool> thread_pool)
     : k_(std::min(std::max(kmer_len, 1U), 32U)),
       w_(window_len),
@@ -54,6 +54,7 @@ MinimizerEngine::MinimizerEngine(
       g_(chain_enlongation_stop_criteria),
       n_(chain_minimizer_cnt_treshold),
       best_n_(best_n),
+      reduce_win_sz_(reduce_win_sz),
       robust_winnowing_(robust_winnowing),
       hpc_(hpc),
       minimizers_(1U << std::min(14U, 2 * k_)),
@@ -417,7 +418,6 @@ std::vector<MinimizerEngine::uint128_t> MinimizerEngine::Minimize(
     }
   };
 
-
   std::uint64_t shift = (k_ - 1) * 2;
   std::uint64_t minimizer = 0;
   std::uint64_t reverse_minimizer = 0;
@@ -492,7 +492,10 @@ std::vector<MinimizerEngine::uint128_t> MinimizerEngine::Minimize(
       dst.resize(take);
     }
   }
-  return dst;
+  if (reduce_win_sz_)
+    return Reduce(dst);
+  else
+    return dst;
 }
 
 template <typename T>
@@ -579,6 +582,59 @@ uint64_t MinimizerEngine::GetMinimizerIndexSize() const {
   for (const auto& it : minimizers_) {
     ret += it.size();
   }
+  return ret;
+}
+std::vector<MinimizerEngine::uint128_t> MinimizerEngine::Reduce(
+    const std::vector<uint128_t>& dst) const {
+  std::uint32_t win_sz = reduce_win_sz_;
+
+  if (dst.empty()) return {};
+
+  if (win_sz > dst.size()) {
+    int mini = 0;
+    for (int i = 1; i < (int)dst.size(); i++)
+      if (dst[i].first < dst[mini].first) mini = i;
+    return std::vector<uint128_t>{dst[mini]};
+  }
+
+  std::vector<uint128_t> ret;
+  std::vector<bool> stored(dst.size(), false);
+
+  std::deque<std::pair<std::uint64_t, std::uint32_t>> window;
+
+  auto window_add = [&](std::uint64_t minimizer,
+                        std::uint32_t location) -> void {
+    while (!window.empty() && window.back().first > minimizer) {
+      window.pop_back();
+    }
+    window.emplace_back(minimizer, location);
+  };
+  auto window_update = [&](std::uint32_t position) -> void {
+    while (!window.empty() && window.front().second < position) {
+      window.pop_front();
+    }
+  };
+
+  auto collect = [&]() -> void {
+    for (auto it = window.begin(); it != window.end(); it++) {
+      if (it->first != window.front().first) break;
+      if (stored[it->second]) continue;
+      stored[it->second] = true;
+      ret.push_back(dst[it->second]);
+    }
+  };
+
+  for (uint32_t i = 0; i < win_sz; i++) {
+    window_add(dst[i].first, i);
+  }
+
+  for (uint32_t i = win_sz; i < dst.size(); i++) {
+    collect();
+    window_update(i - win_sz + 1);
+    window_add(dst[i].first, i);
+  }
+  collect();
+
   return ret;
 }
 
