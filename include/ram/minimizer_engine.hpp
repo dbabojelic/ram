@@ -12,6 +12,7 @@
 #include "biosoup/overlap.hpp"
 #include "biosoup/sequence.hpp"
 #include "thread_pool/thread_pool.hpp"
+#include "ram/uint128_t.hpp"
 
 namespace ram {
 
@@ -59,10 +60,12 @@ class MinimizerEngine {
       const std::unique_ptr<biosoup::Sequence>& rhs, bool micromize = false,
       std::uint8_t N = 0) const;  // only lhs
 
-  uint64_t GetMinimizerIndexSize() const;
+  std::uint64_t GetMinimizerIndexSize() const;
 
  private:
-  using uint128_t = std::pair<std::uint64_t, std::uint64_t>;
+  using uint64_t_pair = std::pair<std::uint64_t, std::uint64_t>;
+  using minimizer_t = std::pair<uint128_t, std::uint64_t>;
+
 
   // Match = [127:97] rhs_id
   //         [96:96] strand
@@ -70,28 +73,28 @@ class MinimizerEngine {
   //         [63:32] lhs_pos
   //         [31:0] rhs_pos
   std::vector<biosoup::Overlap> Chain(std::uint64_t lhs_id,
-                                      std::vector<uint128_t>&& matches) const;
+                                      std::vector<uint64_t_pair>&& matches) const;
 
   // Minimizer = [127:64] kmer
   //             [63:32] id
   //             [31:1] pos
   //             [1:1] strand
-  std::vector<uint128_t> Minimize(
+  std::vector<minimizer_t> Minimize(
       const std::unique_ptr<biosoup::Sequence>& sequence,
       bool micromize = false, std::uint8_t N = 0) const;
 
-  std::vector<uint128_t> Reduce(const std::vector<uint128_t>& dst) const;
+  std::vector<minimizer_t> Reduce(const std::vector<minimizer_t>& dst) const;
 
   template <typename T>
   static void RadixSort(  // any uint128_t
-      std::vector<uint128_t>::iterator begin,
-      std::vector<uint128_t>::iterator end, std::uint8_t max_bits,
+      std::vector<uint64_t_pair>::iterator begin,
+      std::vector<uint64_t_pair>::iterator end, std::uint8_t max_bits,
       T compare);  //  unary comparison function
 
   template <typename T>
   static std::vector<std::uint64_t> LongestSubsequence(  // only Match
-      std::vector<uint128_t>::const_iterator begin,
-      std::vector<uint128_t>::const_iterator end,
+      std::vector<uint64_t_pair>::const_iterator begin,
+      std::vector<uint64_t_pair>::const_iterator end,
       T compare);  // binary comparison function
 
   std::uint32_t k_;
@@ -104,9 +107,9 @@ class MinimizerEngine {
   std::uint32_t reduce_win_sz_;
   bool robust_winnowing_;
   bool hpc_;
-  std::vector<std::vector<uint128_t>> minimizers_;
+  std::vector<std::vector<minimizer_t>> minimizers_;
   std::vector<std::unordered_map<  // kmer -> (begin, count)
-      std::uint64_t, std::pair<std::uint32_t, std::uint32_t>>>
+      uint128_t, std::pair<std::uint32_t, std::uint32_t>>>
       index_;
   std::shared_ptr<thread_pool::ThreadPool> thread_pool_;
 };
