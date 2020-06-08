@@ -245,7 +245,7 @@ int main(int argc, char** argv) {
 
     std::vector<std::unique_ptr<biosoup::Sequence>> targets;
     try {
-      targets = tparser->Parse(1U << 30);
+      targets = tparser->Parse(1ULL << 32);
     } catch (std::invalid_argument& exception) {
       std::cerr << exception.what() << std::endl;
       return 1;
@@ -277,7 +277,7 @@ int main(int argc, char** argv) {
 
       std::vector<std::unique_ptr<biosoup::Sequence>> sequences;
       try {
-        sequences = sparser->Parse(1U << 30);
+        sequences = sparser->Parse(1U << 29);
       } catch (std::invalid_argument& exception) {
         std::cerr << exception.what() << std::endl;
         return 1;
