@@ -161,7 +161,7 @@ TEST_F(RamMinimizerEngineTest, Micromize) {
 TEST_F(RamMinimizerEngineTest, MicromizeExtend) {
   MinimizerEngine me{15, 5};
   me.Minimize(s.begin(), s.end());
-  auto o = me.Map(s.front(), true, true, true, 1);
+  auto o = me.Map(s.front(), true, true, true, 0.,  1);
   EXPECT_EQ(1, o.size());
   EXPECT_EQ(0, o.front().lhs_id);
   EXPECT_EQ(80, o.front().lhs_begin);
