@@ -26,6 +26,7 @@ static struct option options[] = {
     {"hpc", no_argument, nullptr, 'H'},
     {"frequency-threshold", required_argument, nullptr, 'f'},
     {"Micromize", no_argument, nullptr, 'M'},
+    {"Micromize-factor", no_argument, nullptr, 'p'},
     {"Micromize-extend", no_argument, nullptr, 'N'},
     {"m", required_argument, nullptr, 'm'},
     {"g", required_argument, nullptr, 'g'},
@@ -103,6 +104,11 @@ void Help() {
          "      threshold for ignoring most frequent minimizers\n"
          "    -M, --Micromize\n"
          "      use only a portion of all minimizers\n"
+         "    -p, --Micromize-factor <float>\n"
+         "      Expect to get a floating number between 0 and 1\n"
+         "      When using micromizers reduce the number of minimizers to <float> smallest ones\n"
+         "      If zero: number of taken micromizers will be bounded by the value of sequence_len / k\n"
+         "      default: 0\n"
          "    -N, --Micromize-extend <int>\n"
          "      when using micromizers always take first and last <int> minimizers\n"
          "      default: 0\n"
@@ -147,6 +153,7 @@ int main(int argc, char** argv) {
   bool robust_winnowing = false;
   double frequency = 0.001;
   bool micromize = false;
+  double micromize_factor = 0.;
   std::uint8_t N = 0;
   std::uint32_t m = 100;
   std::uint64_t g = 10000;
@@ -158,7 +165,7 @@ int main(int argc, char** argv) {
 
   std::vector<std::string> input_paths;
 
-  const char* optstr = "k:w:Hrf:MN:m:g:n:b:i:x:t:h";
+  const char* optstr = "k:w:Hrf:Mp:N:m:g:n:b:i:x:t:h";
   char arg;
   // clang-format off
   while ((arg = getopt_long(argc, argv, optstr, options, nullptr)) != -1) {
@@ -169,6 +176,7 @@ int main(int argc, char** argv) {
       case 'r': robust_winnowing = true; break;
       case 'f': frequency = std::atof(optarg); break;
       case 'M': micromize = true; break;
+      case 'p': micromize_factor = std::atof(optarg); break;
       case 'N': N = std::atoi(optarg); break;
       case 'm': m = std::atoi(optarg); break;
       case 'g': g = std::atoll(optarg); break;
@@ -202,8 +210,9 @@ int main(int argc, char** argv) {
   std::cerr << "[ram::] using options: "
             << "k = " << k << ", w = " << w << ", hpc: " << hpc
             << ", robust_win: " << robust_winnowing << ", f = " << frequency
-            << ", M = " << micromize << ", N = " << (int)N << ", m = " << m
-            << ", g = " << g << ", n = " << (int)n << ", b = " << b
+            << ", M = " << micromize << ", p = " << micromize_factor
+            << ", N = " << (int)N << ", m = " << m << ", g = " << g
+            << ", n = " << (int)n << ", b = " << b
             << ", reduce_win_sz = " << reduce_win_sz << ", x = " << preset
             << ", t = " << num_threads << std::endl;
 
@@ -293,7 +302,7 @@ int main(int argc, char** argv) {
             [&](const std::unique_ptr<biosoup::Sequence>& sequence)
                 -> std::vector<biosoup::Overlap> {
               return minimizer_engine.Map(sequence, is_ava, is_ava, micromize,
-                                          N);
+                                          micromize_factor, N);
             },
             std::ref(it)));
       }

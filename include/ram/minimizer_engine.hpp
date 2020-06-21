@@ -25,8 +25,8 @@ class MinimizerEngine {
       std::uint8_t chain_minimizer_cnt_treshold = 4,          // -n param
       std::uint32_t best_n = 0,                               // -b param
       std::uint32_t reduce_win_sz = 0,
-      bool robust_winnowing = false,                          // -r param
-      bool hpc = false,  // use homopolymer-compressed minimizers
+      bool robust_winnowing = false,  // -r param
+      bool hpc = false,               // use homopolymer-compressed minimizers
       std::shared_ptr<thread_pool::ThreadPool> thread_pool = nullptr);
 
   MinimizerEngine(const MinimizerEngine&) = delete;
@@ -51,7 +51,8 @@ class MinimizerEngine {
       const std::unique_ptr<biosoup::Sequence>& sequence,
       bool avoid_equal,      // ignore overlaps in which lhs_id == rhs_id
       bool avoid_symmetric,  // ignore overlaps in which lhs_id > rhs_id
-      bool micromize = false, std::uint8_t N = 0) const;  // only lhs
+      bool micromize = false, double micromize_factor = 0.,
+      std::uint8_t N = 0) const;  // only lhs
 
   // find overlaps between a pair of sequences
   std::vector<biosoup::Overlap> Map(
@@ -78,7 +79,8 @@ class MinimizerEngine {
   //             [1:1] strand
   std::vector<uint128_t> Minimize(
       const std::unique_ptr<biosoup::Sequence>& sequence,
-      bool micromize = false, std::uint8_t N = 0) const;
+      bool micromize = false, double micromize_factor = 0.,
+      std::uint8_t N = 0) const;
 
   std::vector<uint128_t> Reduce(const std::vector<uint128_t>& dst) const;
 

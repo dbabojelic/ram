@@ -45,8 +45,9 @@ MinimizerEngine::MinimizerEngine(
     std::uint32_t kmer_len, std::uint32_t window_len,
     std::uint32_t chaining_score_treshold,
     std::uint64_t chain_enlongation_stop_criteria,
-    std::uint8_t chain_minimizer_cnt_treshold, std::uint32_t best_n, std::uint32_t reduce_win_sz, bool hpc,
-    bool robust_winnowing, std::shared_ptr<thread_pool::ThreadPool> thread_pool)
+    std::uint8_t chain_minimizer_cnt_treshold, std::uint32_t best_n,
+    std::uint32_t reduce_win_sz, bool hpc, bool robust_winnowing,
+    std::shared_ptr<thread_pool::ThreadPool> thread_pool)
     : k_(std::min(std::max(kmer_len, 1U), 32U)),
       w_(window_len),
       occurrence_(-1),
@@ -160,8 +161,9 @@ void MinimizerEngine::Filter(double frequency) {
 
 std::vector<biosoup::Overlap> MinimizerEngine::Map(
     const std::unique_ptr<biosoup::Sequence>& sequence, bool avoid_equal,
-    bool avoid_symmetric, bool micromize, std::uint8_t N) const {
-  auto sketch = Minimize(sequence, micromize, N);
+    bool avoid_symmetric, bool micromize, double micromize_factor,
+    std::uint8_t N) const {
+  auto sketch = Minimize(sequence, micromize, micromize_factor, N);
   if (sketch.empty()) {
     return std::vector<biosoup::Overlap>{};
   }
@@ -206,7 +208,7 @@ std::vector<biosoup::Overlap> MinimizerEngine::Map(
     const std::unique_ptr<biosoup::Sequence>& lhs,
     const std::unique_ptr<biosoup::Sequence>& rhs, bool micromize,
     std::uint8_t N) const {
-  auto lhs_sketch = Minimize(lhs, micromize, N);
+  auto lhs_sketch = Minimize(lhs, micromize, 0., N);
   if (lhs_sketch.empty()) {
     return std::vector<biosoup::Overlap>{};
   }
@@ -376,7 +378,7 @@ std::vector<biosoup::Overlap> MinimizerEngine::Chain(
 
 std::vector<MinimizerEngine::uint128_t> MinimizerEngine::Minimize(
     const std::unique_ptr<biosoup::Sequence>& sequence, bool micromize,
-    std::uint8_t N) const {
+    double micromize_factor, std::uint8_t N) const {
   if (sequence->data.size() < k_) {
     return std::vector<uint128_t>{};
   }
@@ -484,6 +486,9 @@ std::vector<MinimizerEngine::uint128_t> MinimizerEngine::Minimize(
 
   if (micromize) {
     std::uint32_t take = sequence->data.size() / k_;
+    if (micromize_factor > 0.) {
+      take = (int)dst.size() * micromize_factor;
+    }
     if (take < dst.size()) {
       if (2 * N <= dst.size())
         RadixSort(dst.begin() + N, dst.end() - N, k_ * 2, ::First);
