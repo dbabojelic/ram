@@ -301,8 +301,12 @@ int main(int argc, char** argv) {
         futures.emplace_back(thread_pool->Submit(
             [&](const std::unique_ptr<biosoup::Sequence>& sequence)
                 -> std::vector<biosoup::Overlap> {
-              return minimizer_engine.Map(sequence, is_ava, is_ava, micromize,
-                                          micromize_factor, N);
+              if (!micromize)
+                return minimizer_engine.Map(sequence, is_ava, is_ava, micromize,
+                                            micromize_factor, N);
+              else
+                return minimizer_engine.MapBeginEnd(sequence, is_ava, is_ava,
+                                                    1000);
             },
             std::ref(it)));
       }

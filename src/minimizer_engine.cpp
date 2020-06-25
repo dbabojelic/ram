@@ -5,6 +5,7 @@
 #include <cassert>
 #include <deque>
 #include <iostream>
+#include <memory>
 #include <stdexcept>
 
 namespace {
@@ -641,6 +642,44 @@ std::vector<MinimizerEngine::uint128_t> MinimizerEngine::Reduce(
   collect();
 
   return ret;
+}
+std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
+    const std::unique_ptr<biosoup::Sequence>& sequence, bool avoid_equal,
+    bool avoid_symmetric, std::uint32_t K) const {
+  if (sequence->data.size() <= 2 * K)
+    return Map(sequence, avoid_equal, avoid_symmetric);
+
+  auto begin_seq = std::unique_ptr<biosoup::Sequence>(
+      new biosoup::Sequence(sequence->name, sequence->data.substr(0, K)));
+  auto end_seq = std::unique_ptr<biosoup::Sequence>(new biosoup::Sequence(
+      sequence->name, sequence->data.substr(sequence->data.size() - K, K)));
+
+  auto begin_overlap = Map(begin_seq, avoid_equal, avoid_symmetric);
+  auto end_overlap = Map(end_seq, avoid_equal, avoid_symmetric);
+
+//  std::cout << "begin overlapzz: " << std::endl;
+//  for (const auto& elem : begin_overlap) {
+//    std::cout << "left: " << elem.lhs_begin << " " << elem.lhs_end
+//              << " right: " << elem.rhs_begin << " " << elem.rhs_end
+//              << std::endl;
+//  }
+//  std::cout << "end overlapzz: " << std::endl;
+//  for (const auto& elem : end_overlap) {
+//    std::cout << "left: " << elem.lhs_begin << " " << elem.lhs_end
+//              << " right: " << elem.rhs_begin << " " << elem.rhs_end
+//              << std::endl;
+//  }
+
+  if (begin_overlap.empty() || end_overlap.empty()) return {};
+
+  auto lhs_id = sequence->id;
+  auto lhs_begin = begin_overlap[0].lhs_begin;
+  auto lhs_end = end_overlap[0].lhs_end + sequence->data.size() - K;
+  auto rhs_id = begin_overlap[0].rhs_id;
+  auto rhs_begin = begin_overlap[0].rhs_begin;
+  auto rhs_end = end_overlap[0].rhs_end;
+
+  return {biosoup::Overlap(lhs_id, lhs_begin, lhs_end, rhs_id, rhs_begin, rhs_end, 255)};
 }
 
 }  // namespace ram
