@@ -657,29 +657,19 @@ std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
   auto begin_overlap = Map(begin_seq, avoid_equal, avoid_symmetric);
   auto end_overlap = Map(end_seq, avoid_equal, avoid_symmetric);
 
-//  std::cout << "begin overlapzz: " << std::endl;
-//  for (const auto& elem : begin_overlap) {
-//    std::cout << "left: " << elem.lhs_begin << " " << elem.lhs_end
-//              << " right: " << elem.rhs_begin << " " << elem.rhs_end
-//              << std::endl;
-//  }
-//  std::cout << "end overlapzz: " << std::endl;
-//  for (const auto& elem : end_overlap) {
-//    std::cout << "left: " << elem.lhs_begin << " " << elem.lhs_end
-//              << " right: " << elem.rhs_begin << " " << elem.rhs_end
-//              << std::endl;
-//  }
-
   if (begin_overlap.empty() || end_overlap.empty()) return {};
 
   auto lhs_id = sequence->id;
   auto lhs_begin = begin_overlap[0].lhs_begin;
-  auto lhs_end = end_overlap[0].lhs_end + sequence->data.size() - K;
+  std::uint32_t lhs_end = end_overlap[0].lhs_end + sequence->data.size() - K;
   auto rhs_id = begin_overlap[0].rhs_id;
   auto rhs_begin = begin_overlap[0].rhs_begin;
   auto rhs_end = end_overlap[0].rhs_end;
+  bool strand = true;
+  if (rhs_end < rhs_begin) std::swap(rhs_begin, rhs_end), strand = false;
 
-  return {biosoup::Overlap(lhs_id, lhs_begin, lhs_end, rhs_id, rhs_begin, rhs_end, 255)};
+  return {biosoup::Overlap(lhs_id, lhs_begin, lhs_end, rhs_id, rhs_begin,
+                           rhs_end, std::max(lhs_end - lhs_begin, rhs_end - rhs_begin), strand)};
 }
 
 }  // namespace ram
