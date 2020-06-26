@@ -3,6 +3,7 @@
 #include "ram/minimizer_engine.hpp"
 
 #include <cassert>
+#include <cstdlib>
 #include <deque>
 #include <iostream>
 #include <memory>
@@ -646,30 +647,57 @@ std::vector<MinimizerEngine::uint128_t> MinimizerEngine::Reduce(
 std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
     const std::unique_ptr<biosoup::Sequence>& sequence, bool avoid_equal,
     bool avoid_symmetric, std::uint32_t K) const {
-  if (sequence->data.size() <= 2 * K)
+  auto sequence_size = sequence->data.size();
+  if (sequence_size <= 2 * K)
     return Map(sequence, avoid_equal, avoid_symmetric);
 
   auto begin_seq = std::unique_ptr<biosoup::Sequence>(
       new biosoup::Sequence(sequence->name, sequence->data.substr(0, K)));
   auto end_seq = std::unique_ptr<biosoup::Sequence>(new biosoup::Sequence(
-      sequence->name, sequence->data.substr(sequence->data.size() - K, K)));
+      sequence->name, sequence->data.substr(sequence_size - K, K)));
 
   auto begin_overlap = Map(begin_seq, avoid_equal, avoid_symmetric);
   auto end_overlap = Map(end_seq, avoid_equal, avoid_symmetric);
 
   if (begin_overlap.empty() || end_overlap.empty()) return {};
 
+  std::uint64_t min_diff = std::numeric_limits<std::uint64_t>::max();
+  int ansi = 0;
+  int ansj = 0;
+  int i = 0;
+  for (const auto& bov : begin_overlap) {
+    int j = 0;
+    for (const auto& eov : end_overlap) {
+      auto lhs_begin = bov.lhs_begin;
+      std::uint32_t lhs_end = eov.lhs_end + sequence_size - K;
+      auto rhs_begin = bov.rhs_begin;
+      auto rhs_end = eov.rhs_end;
+      if (rhs_end < rhs_begin) std::swap(rhs_begin, rhs_end);
+      int candidate_len = rhs_end - rhs_begin;
+      int candi_diff =
+          std::abs(candidate_len - static_cast<int>(sequence_size));
+      if (candi_diff < min_diff) {
+        ansi = i;
+        ansj = j;
+        min_diff = candi_diff;
+      }
+      j++;
+    }
+    i++;
+  }
+
   auto lhs_id = sequence->id;
-  auto lhs_begin = begin_overlap[0].lhs_begin;
-  std::uint32_t lhs_end = end_overlap[0].lhs_end + sequence->data.size() - K;
-  auto rhs_id = begin_overlap[0].rhs_id;
-  auto rhs_begin = begin_overlap[0].rhs_begin;
-  auto rhs_end = end_overlap[0].rhs_end;
+  auto lhs_begin = begin_overlap[ansi].lhs_begin;
+  std::uint32_t lhs_end = end_overlap[ansj].lhs_end + sequence_size - K;
+  auto rhs_id = begin_overlap[ansi].rhs_id;
+  auto rhs_begin = begin_overlap[ansi].rhs_begin;
+  auto rhs_end = end_overlap[ansj].rhs_end;
   bool strand = true;
   if (rhs_end < rhs_begin) std::swap(rhs_begin, rhs_end), strand = false;
 
-  return {biosoup::Overlap(lhs_id, lhs_begin, lhs_end, rhs_id, rhs_begin,
-                           rhs_end, std::max(lhs_end - lhs_begin, rhs_end - rhs_begin), strand)};
+  return {biosoup::Overlap(
+      lhs_id, lhs_begin, lhs_end, rhs_id, rhs_begin, rhs_end,
+      std::max(lhs_end - lhs_begin, rhs_end - rhs_begin), strand)};
 }
 
 }  // namespace ram
