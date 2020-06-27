@@ -694,8 +694,8 @@ std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
       }
       if (rhs_end < rhs_begin) std::swap(rhs_begin, rhs_end);
       int candidate_len = rhs_end - rhs_begin;
-      if (candidate_len < 0.8 * sequence_size ||
-          candidate_len > 1.2 * sequence_size)
+      if (candidate_len < 0.5 * sequence_size ||
+          candidate_len > 1.5 * sequence_size)
         continue;
       int candi_diff =
           std::abs(candidate_len - static_cast<int>(sequence_size));
