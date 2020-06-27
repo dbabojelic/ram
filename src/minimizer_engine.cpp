@@ -659,21 +659,44 @@ std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
   auto begin_overlap = Map(begin_seq, avoid_equal, avoid_symmetric);
   auto end_overlap = Map(end_seq, avoid_equal, avoid_symmetric);
 
+//  std::cout << "beginzzz" << std::endl;
+//  for (const auto& ov : begin_overlap) {
+//    std::cout << "lhs: " << ov.lhs_begin << " " << ov.lhs_end
+//              << "  rhs: " << ov.rhs_begin << " " << ov.rhs_end << " "
+//              << ov.rhs_id << std::endl;
+//  }
+//  std::cout << "endzzz" << std::endl;
+//  for (const auto& ov : end_overlap) {
+//    std::cout << "lhs: " << ov.lhs_begin << " " << ov.lhs_end
+//              << "  rhs: " << ov.rhs_begin << " " << ov.rhs_end << " "
+//              << ov.rhs_id << std::endl;
+//  }
+//  std::cout << std::endl;
+//
+//  std::cout << "sizes: " << begin_overlap.size() << " " << end_overlap.size()
+//            << std::endl;
   if (begin_overlap.empty() || end_overlap.empty()) return {};
 
   std::uint64_t min_diff = std::numeric_limits<std::uint64_t>::max();
-  int ansi = 0;
-  int ansj = 0;
+  int ansi = -1;
+  int ansj = -1;
   int i = 0;
   for (const auto& bov : begin_overlap) {
     int j = 0;
     for (const auto& eov : end_overlap) {
-      auto lhs_begin = bov.lhs_begin;
-      std::uint32_t lhs_end = eov.lhs_end + sequence_size - K;
+      if (bov.strand != eov.strand) continue;
+      if (bov.rhs_id != eov.rhs_id) continue;
       auto rhs_begin = bov.rhs_begin;
       auto rhs_end = eov.rhs_end;
+      if (!eov.strand) {
+        rhs_begin = eov.rhs_begin;
+        rhs_end = bov.rhs_end;
+      }
       if (rhs_end < rhs_begin) std::swap(rhs_begin, rhs_end);
       int candidate_len = rhs_end - rhs_begin;
+      if (candidate_len < 0.8 * sequence_size ||
+          candidate_len > 1.2 * sequence_size)
+        continue;
       int candi_diff =
           std::abs(candidate_len - static_cast<int>(sequence_size));
       if (candi_diff < min_diff) {
@@ -685,6 +708,8 @@ std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
     }
     i++;
   }
+
+  if (ansi == -1) return {};
 
   auto lhs_id = sequence->id;
   auto lhs_begin = begin_overlap[ansi].lhs_begin;
