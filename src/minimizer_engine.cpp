@@ -660,16 +660,20 @@ std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
   auto end_overlap = Map(end_seq, avoid_equal, avoid_symmetric);
 
 //  std::cout << "beginzzz" << std::endl;
+//  int bla = 0;
 //  for (const auto& ov : begin_overlap) {
-//    std::cout << "lhs: " << ov.lhs_begin << " " << ov.lhs_end
+//    std::cout << bla << ":  lhs: " << ov.lhs_begin << " " << ov.lhs_end
 //              << "  rhs: " << ov.rhs_begin << " " << ov.rhs_end << " "
 //              << ov.rhs_id << std::endl;
+//    bla++;
 //  }
 //  std::cout << "endzzz" << std::endl;
+//  bla = 0;
 //  for (const auto& ov : end_overlap) {
-//    std::cout << "lhs: " << ov.lhs_begin << " " << ov.lhs_end
+//    std::cout <<bla <<  ":  lhs: " << ov.lhs_begin << " " << ov.lhs_end
 //              << "  rhs: " << ov.rhs_begin << " " << ov.rhs_end << " "
 //              << ov.rhs_id << std::endl;
+//    bla++;
 //  }
 //  std::cout << std::endl;
 //
@@ -684,6 +688,7 @@ std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
   for (const auto& bov : begin_overlap) {
     int j = 0;
     for (const auto& eov : end_overlap) {
+      j++;
       if (bov.strand != eov.strand) continue;
       if (bov.rhs_id != eov.rhs_id) continue;
       auto rhs_begin = bov.rhs_begin;
@@ -692,6 +697,8 @@ std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
         rhs_begin = eov.rhs_begin;
         rhs_end = bov.rhs_end;
       }
+
+      if (rhs_begin > rhs_end) continue;
       int candidate_len = rhs_end - rhs_begin;
       if (candidate_len < 0.5 * sequence_size ||
           candidate_len > 1.5 * sequence_size)
@@ -700,10 +707,9 @@ std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
           std::abs(candidate_len - static_cast<int>(sequence_size));
       if (candi_diff < min_diff) {
         ansi = i;
-        ansj = j;
+        ansj = j - 1;
         min_diff = candi_diff;
       }
-      j++;
     }
     i++;
   }
