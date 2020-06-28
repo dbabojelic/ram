@@ -692,7 +692,6 @@ std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
         rhs_begin = eov.rhs_begin;
         rhs_end = bov.rhs_end;
       }
-      if (rhs_end < rhs_begin) std::swap(rhs_begin, rhs_end);
       int candidate_len = rhs_end - rhs_begin;
       if (candidate_len < 0.5 * sequence_size ||
           candidate_len > 1.5 * sequence_size)
@@ -717,12 +716,17 @@ std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
   auto rhs_id = begin_overlap[ansi].rhs_id;
   auto rhs_begin = begin_overlap[ansi].rhs_begin;
   auto rhs_end = end_overlap[ansj].rhs_end;
-  bool strand = true;
-  if (rhs_end < rhs_begin) std::swap(rhs_begin, rhs_end), strand = false;
+
+  if (!begin_overlap[ansi].strand) {
+    lhs_begin = end_overlap[ansj].lhs_begin;
+    lhs_end = begin_overlap[ansi].lhs_end + sequence_size - K;
+    rhs_begin = end_overlap[ansj].rhs_begin;
+    rhs_end = begin_overlap[ansi].rhs_end;
+  }
 
   return {biosoup::Overlap(
       lhs_id, lhs_begin, lhs_end, rhs_id, rhs_begin, rhs_end,
-      std::max(lhs_end - lhs_begin, rhs_end - rhs_begin), strand)};
+      std::max(lhs_end - lhs_begin, rhs_end - rhs_begin), begin_overlap[ansi].strand)};
 }
 
 }  // namespace ram
