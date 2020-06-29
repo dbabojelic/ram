@@ -709,8 +709,8 @@ std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
 
       if (rhs_begin > rhs_end) continue;
       int candidate_len = rhs_end - rhs_begin;
-      if (candidate_len > 0.8 * sequence_size &&
-          candidate_len < 1.2 * sequence_size) {
+      if (candidate_len > 0.95 * sequence_size &&
+          candidate_len < 1.05 * sequence_size) {
         ansi = i;
         ansj = j;
         found = true;
