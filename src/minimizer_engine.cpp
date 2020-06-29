@@ -686,9 +686,14 @@ std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
   int ansj = -1;
 
   int max_index_sum = begin_overlap.size() + end_overlap.size() - 2;
+  double penalty = 1.0;
+  double penalty_mult = 1.0;
+  int last_two = K % 100;
+  penalty_mult += last_two / 100.;
+
   for (int index_sum = 0; index_sum <= max_index_sum; index_sum++) {
 
-    bool found = false;
+//    bool found = false;
 
     for (int i = 0, j = index_sum - i ; j >= 0 && i < begin_overlap.size(); i++, j--) {
       if (j >= end_overlap.size()) {
@@ -709,14 +714,14 @@ std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
 
       if (rhs_begin > rhs_end) continue;
       int candidate_len = rhs_end - rhs_begin;
-      if (candidate_len > 0.95 * sequence_size &&
-          candidate_len < 1.05 * sequence_size) {
-        ansi = i;
-        ansj = j;
-        found = true;
-        break;
-      }
-      int candi_diff =
+//      if (candidate_len > 0.95 * sequence_size &&
+//          candidate_len < 1.05 * sequence_size) {
+//        ansi = i;
+//        ansj = j;
+//        found = true;
+//        break;
+//      }
+      int candi_diff = penalty *
           std::abs(candidate_len - static_cast<int>(sequence_size));
       if (candi_diff < min_diff) {
         ansi = i;
@@ -724,8 +729,7 @@ std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
         min_diff = candi_diff;
       }
     }
-
-    if (found) break;
+    penalty *= penalty_mult;
   }
 
 
