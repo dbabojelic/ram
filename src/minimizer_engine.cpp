@@ -684,11 +684,20 @@ std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
   std::uint64_t min_diff = std::numeric_limits<std::uint64_t>::max();
   int ansi = -1;
   int ansj = -1;
-  int i = 0;
-  for (const auto& bov : begin_overlap) {
-    int j = 0;
-    for (const auto& eov : end_overlap) {
-      j++;
+
+  int max_index_sum = begin_overlap.size() + end_overlap.size() - 2;
+  for (int index_sum = 0; index_sum <= max_index_sum; index_sum++) {
+
+    bool found = false;
+
+    for (int i = 0, j = index_sum - i ; j >= 0 && i < begin_overlap.size(); i++, j--) {
+      if (j >= end_overlap.size()) {
+        continue;
+      }
+
+      const auto& bov = begin_overlap[i];
+      const auto& eov = end_overlap[j];
+
       if (bov.strand != eov.strand) continue;
       if (bov.rhs_id != eov.rhs_id) continue;
       auto rhs_begin = bov.rhs_begin;
@@ -700,19 +709,26 @@ std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
 
       if (rhs_begin > rhs_end) continue;
       int candidate_len = rhs_end - rhs_begin;
-      if (candidate_len < 0.5 * sequence_size ||
-          candidate_len > 1.5 * sequence_size)
-        continue;
+      if (candidate_len > 0.8 * sequence_size &&
+          candidate_len < 1.2 * sequence_size) {
+        ansi = i;
+        ansj = j;
+        found = true;
+        break;
+      }
       int candi_diff =
           std::abs(candidate_len - static_cast<int>(sequence_size));
       if (candi_diff < min_diff) {
         ansi = i;
-        ansj = j - 1;
+        ansj = j;
         min_diff = candi_diff;
       }
     }
-    i++;
+
+    if (found) break;
   }
+
+
 
   if (ansi == -1) return {};
 
