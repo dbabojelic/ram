@@ -659,26 +659,27 @@ std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
   auto begin_overlap = Map(begin_seq, avoid_equal, avoid_symmetric);
   auto end_overlap = Map(end_seq, avoid_equal, avoid_symmetric);
 
-//  std::cout << "beginzzz" << std::endl;
-//  int bla = 0;
-//  for (const auto& ov : begin_overlap) {
-//    std::cout << bla << ":  lhs: " << ov.lhs_begin << " " << ov.lhs_end
-//              << "  rhs: " << ov.rhs_begin << " " << ov.rhs_end << " "
-//              << ov.rhs_id << std::endl;
-//    bla++;
-//  }
-//  std::cout << "endzzz" << std::endl;
-//  bla = 0;
-//  for (const auto& ov : end_overlap) {
-//    std::cout <<bla <<  ":  lhs: " << ov.lhs_begin << " " << ov.lhs_end
-//              << "  rhs: " << ov.rhs_begin << " " << ov.rhs_end << " "
-//              << ov.rhs_id << std::endl;
-//    bla++;
-//  }
-//  std::cout << std::endl;
-//
-//  std::cout << "sizes: " << begin_overlap.size() << " " << end_overlap.size()
-//            << std::endl;
+  //  std::cout << "beginzzz" << std::endl;
+  //  int bla = 0;
+  //  for (const auto& ov : begin_overlap) {
+  //    std::cout << bla << ":  lhs: " << ov.lhs_begin << " " << ov.lhs_end
+  //              << "  rhs: " << ov.rhs_begin << " " << ov.rhs_end << " "
+  //              << ov.rhs_id << std::endl;
+  //    bla++;
+  //  }
+  //  std::cout << "endzzz" << std::endl;
+  //  bla = 0;
+  //  for (const auto& ov : end_overlap) {
+  //    std::cout <<bla <<  ":  lhs: " << ov.lhs_begin << " " << ov.lhs_end
+  //              << "  rhs: " << ov.rhs_begin << " " << ov.rhs_end << " "
+  //              << ov.rhs_id << std::endl;
+  //    bla++;
+  //  }
+  //  std::cout << std::endl;
+  //
+  //  std::cout << "sizes: " << begin_overlap.size() << " " <<
+  //  end_overlap.size()
+  //            << std::endl;
   if (begin_overlap.empty() || end_overlap.empty()) return {};
 
   std::uint64_t min_diff = std::numeric_limits<std::uint64_t>::max();
@@ -687,15 +688,13 @@ std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
 
   int max_index_sum = begin_overlap.size() + end_overlap.size() - 2;
   double penalty = 1.0;
-  double penalty_mult = 1.0;
-  int last_two = K % 100;
-  penalty_mult += last_two / 100.;
+  const double penalty_mult = 1.08;
 
   for (int index_sum = 0; index_sum <= max_index_sum; index_sum++) {
+    //    bool found = false;
 
-//    bool found = false;
-
-    for (int i = 0, j = index_sum - i ; j >= 0 && i < begin_overlap.size(); i++, j--) {
+    for (std::uint32_t i = 0, j = index_sum - i;
+         j >= 0 && i < begin_overlap.size(); i++, j--) {
       if (j >= end_overlap.size()) {
         continue;
       }
@@ -714,15 +713,15 @@ std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
 
       if (rhs_begin > rhs_end) continue;
       int candidate_len = rhs_end - rhs_begin;
-//      if (candidate_len > 0.95 * sequence_size &&
-//          candidate_len < 1.05 * sequence_size) {
-//        ansi = i;
-//        ansj = j;
-//        found = true;
-//        break;
-//      }
-      int candi_diff = penalty *
-          std::abs(candidate_len - static_cast<int>(sequence_size));
+      //      if (candidate_len > 0.95 * sequence_size &&
+      //          candidate_len < 1.05 * sequence_size) {
+      //        ansi = i;
+      //        ansj = j;
+      //        found = true;
+      //        break;
+      //      }
+      int candi_diff =
+          penalty * std::abs(candidate_len - static_cast<int>(sequence_size));
       if (candi_diff < min_diff) {
         ansi = i;
         ansj = j;
@@ -731,8 +730,6 @@ std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
     }
     penalty *= penalty_mult;
   }
-
-
 
   if (ansi == -1) return {};
 
@@ -750,9 +747,10 @@ std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
     rhs_end = begin_overlap[ansi].rhs_end;
   }
 
-  return {biosoup::Overlap(
-      lhs_id, lhs_begin, lhs_end, rhs_id, rhs_begin, rhs_end,
-      std::max(lhs_end - lhs_begin, rhs_end - rhs_begin), begin_overlap[ansi].strand)};
+  return {biosoup::Overlap(lhs_id, lhs_begin, lhs_end, rhs_id, rhs_begin,
+                           rhs_end,
+                           std::max(lhs_end - lhs_begin, rhs_end - rhs_begin),
+                           begin_overlap[ansi].strand)};
 }
 
 }  // namespace ram
