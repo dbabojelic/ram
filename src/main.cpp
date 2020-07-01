@@ -325,21 +325,21 @@ int main(int argc, char** argv) {
       for (auto& it : futures) {
         for (const auto& jt : it.get()) {
           // clang-format off
-          std::cout << sequences[jt.lhs_id - lhs_offset]->name << "\t"
-                    << sequences[jt.lhs_id - lhs_offset]->data.size() << "\t"
-                    << jt.lhs_begin << "\t"
-                    << jt.lhs_end << "\t"
-                    << (jt.strand ? "+" : "-") << "\t"
-                    << targets[jt.rhs_id - rhs_offset]->name << "\t"
-                    << targets[jt.rhs_id - rhs_offset]->data.size() << "\t"
-                    << jt.rhs_begin << "\t"
-                    << jt.rhs_end << "\t"
-                    << jt.score << "\t"
-                    << std::max(
-                          jt.lhs_end - jt.lhs_begin,
-                          jt.rhs_end - jt.rhs_begin) << "\t"
-                    << 255
-                    << std::endl;
+//          std::cout << sequences[jt.lhs_id - lhs_offset]->name << "\t"
+//                    << sequences[jt.lhs_id - lhs_offset]->data.size() << "\t"
+//                    << jt.lhs_begin << "\t"
+//                    << jt.lhs_end << "\t"
+//                    << (jt.strand ? "+" : "-") << "\t"
+//                    << targets[jt.rhs_id - rhs_offset]->name << "\t"
+//                    << targets[jt.rhs_id - rhs_offset]->data.size() << "\t"
+//                    << jt.rhs_begin << "\t"
+//                    << jt.rhs_end << "\t"
+//                    << jt.score << "\t"
+//                    << std::max(
+//                          jt.lhs_end - jt.lhs_begin,
+//                          jt.rhs_end - jt.rhs_begin) << "\t"
+//                    << 255
+//                    << std::endl;
           // clang-format on
         }
 

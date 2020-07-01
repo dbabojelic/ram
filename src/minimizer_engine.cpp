@@ -203,6 +203,8 @@ std::vector<biosoup::Overlap> MinimizerEngine::Map(
     }
   }
 
+  std::cout << matches.size() * 1.0 / sequence->data.size() << std::endl;
+
   return Chain(sequence->id, std::move(matches));
 }
 
