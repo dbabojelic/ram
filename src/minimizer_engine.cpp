@@ -45,8 +45,9 @@ MinimizerEngine::MinimizerEngine(
     std::uint32_t kmer_len, std::uint32_t window_len,
     std::uint32_t chaining_score_treshold,
     std::uint64_t chain_enlongation_stop_criteria,
-    std::uint8_t chain_minimizer_cnt_treshold, std::uint32_t best_n, std::uint32_t reduce_win_sz, bool hpc,
-    bool robust_winnowing, std::shared_ptr<thread_pool::ThreadPool> thread_pool)
+    std::uint8_t chain_minimizer_cnt_treshold, std::uint32_t best_n,
+    std::uint32_t reduce_win_sz, bool hpc, bool robust_winnowing,
+    std::shared_ptr<thread_pool::ThreadPool> thread_pool)
     : k_(std::min(std::max(kmer_len, 1U), 32U)),
       w_(window_len),
       occurrence_(-1),
@@ -104,8 +105,9 @@ void MinimizerEngine::Minimize(
 
       futures.emplace_back(thread_pool_->Submit(
           [&](std::uint32_t bin) -> void {
-//            RadixSort(minimizers_[bin].begin(), minimizers_[bin].end(), k_ * 2,
-//                      ::First);
+            //            RadixSort(minimizers_[bin].begin(),
+            //            minimizers_[bin].end(), k_ * 2,
+            //                      ::First);
             std::sort(minimizers_[bin].begin(), minimizers_[bin].end());
 
             for (std::uint64_t i = 0, c = 0; i < minimizers_[bin].size(); ++i) {
@@ -217,10 +219,10 @@ std::vector<biosoup::Overlap> MinimizerEngine::Map(
     return std::vector<biosoup::Overlap>{};
   }
 
-//  RadixSort(lhs_sketch.begin(), lhs_sketch.end(), k_ * 2, ::First);
+  //  RadixSort(lhs_sketch.begin(), lhs_sketch.end(), k_ * 2, ::First);
   std::sort(lhs_sketch.begin(), lhs_sketch.end());
   std::sort(rhs_sketch.begin(), rhs_sketch.end());
-//  RadixSort(rhs_sketch.begin(), rhs_sketch.end(), k_ * 2, ::First);
+  //  RadixSort(rhs_sketch.begin(), rhs_sketch.end(), k_ * 2, ::First);
 
   std::uint64_t rhs_id = rhs->id;
 
@@ -397,9 +399,6 @@ std::vector<MinimizerEngine::minimizer_t> MinimizerEngine::Minimize(
     return key;
   };
 
-
-
-
   std::deque<minimizer_t> window;
   auto window_add = [&](uint128_t minimizer,
                         std::uint64_t location) -> void {  // NOLINT
@@ -492,7 +491,7 @@ std::vector<MinimizerEngine::minimizer_t> MinimizerEngine::Minimize(
     std::uint32_t take = sequence->data.size() / k_;
     if (take < dst.size()) {
       if (2 * N <= dst.size())
-//        RadixSort(dst.begin() + N, dst.end() - N, k_ * 2, ::First);
+        //        RadixSort(dst.begin() + N, dst.end() - N, k_ * 2, ::First);
         std::sort(dst.begin() + N, dst.end() - N);
       if (N < take)
         dst.insert(dst.begin() + take - N, dst.end() - N, dst.end());
@@ -609,8 +608,7 @@ std::vector<MinimizerEngine::minimizer_t> MinimizerEngine::Reduce(
 
   std::deque<std::pair<uint128_t, std::uint32_t>> window;
 
-  auto window_add = [&](uint128_t minimizer,
-                        std::uint32_t location) -> void {
+  auto window_add = [&](uint128_t minimizer, std::uint32_t location) -> void {
     while (!window.empty() && window.back().first > minimizer) {
       window.pop_back();
     }
@@ -643,6 +641,87 @@ std::vector<MinimizerEngine::minimizer_t> MinimizerEngine::Reduce(
   collect();
 
   return ret;
+}
+
+std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
+    const std::unique_ptr<biosoup::Sequence>& sequence, bool avoid_equal,
+    bool avoid_symmetric, std::uint32_t K) const {
+  auto sequence_size = sequence->data.size();
+  if (sequence_size <= 5 * K)
+    return Map(sequence, avoid_equal, avoid_symmetric);
+
+  auto begin_seq = std::unique_ptr<biosoup::Sequence>(
+      new biosoup::Sequence(sequence->name, sequence->data.substr(0, K)));
+  auto end_seq = std::unique_ptr<biosoup::Sequence>(new biosoup::Sequence(
+      sequence->name, sequence->data.substr(sequence_size - K, K)));
+
+  auto begin_overlap = Map(begin_seq, avoid_equal, avoid_symmetric);
+  auto end_overlap = Map(end_seq, avoid_equal, avoid_symmetric);
+
+  if (begin_overlap.empty() || end_overlap.empty()) return {};
+
+  std::uint64_t min_diff = std::numeric_limits<std::uint64_t>::max();
+  int ansi = -1;
+  int ansj = -1;
+
+  int max_index_sum = begin_overlap.size() + end_overlap.size() - 2;
+  double penalty = 1.0;
+  const double penalty_mult = 1.08;
+
+  for (int index_sum = 0; index_sum <= max_index_sum; index_sum++) {
+    //    bool found = false;
+
+    for (std::uint32_t i = 0, j = index_sum - i;
+         j >= 0 && i < begin_overlap.size(); i++, j--) {
+      if (j >= end_overlap.size()) {
+        continue;
+      }
+
+      const auto& bov = begin_overlap[i];
+      const auto& eov = end_overlap[j];
+
+      if (bov.strand != eov.strand) continue;
+      if (bov.rhs_id != eov.rhs_id) continue;
+      auto rhs_begin = bov.rhs_begin;
+      auto rhs_end = eov.rhs_end;
+      if (!eov.strand) {
+        rhs_begin = eov.rhs_begin;
+        rhs_end = bov.rhs_end;
+      }
+
+      if (rhs_begin > rhs_end) continue;
+      int candidate_len = rhs_end - rhs_begin;
+      int candi_diff =
+          penalty * std::abs(candidate_len - static_cast<int>(sequence_size));
+      if (candi_diff < min_diff) {
+        ansi = i;
+        ansj = j;
+        min_diff = candi_diff;
+      }
+    }
+    penalty *= penalty_mult;
+  }
+
+  if (ansi == -1) return {};
+
+  auto lhs_id = sequence->id;
+  auto lhs_begin = begin_overlap[ansi].lhs_begin;
+  std::uint32_t lhs_end = end_overlap[ansj].lhs_end + sequence_size - K;
+  auto rhs_id = begin_overlap[ansi].rhs_id;
+  auto rhs_begin = begin_overlap[ansi].rhs_begin;
+  auto rhs_end = end_overlap[ansj].rhs_end;
+
+  if (!begin_overlap[ansi].strand) {
+    lhs_begin = end_overlap[ansj].lhs_begin;
+    lhs_end = begin_overlap[ansi].lhs_end + sequence_size - K;
+    rhs_begin = end_overlap[ansj].rhs_begin;
+    rhs_end = begin_overlap[ansi].rhs_end;
+  }
+
+  return {biosoup::Overlap(lhs_id, lhs_begin, lhs_end, rhs_id, rhs_begin,
+                           rhs_end,
+                           std::max(lhs_end - lhs_begin, rhs_end - rhs_begin),
+                           begin_overlap[ansi].strand)};
 }
 
 }  // namespace ram

@@ -26,7 +26,8 @@ static struct option options[] = {
     {"hpc", no_argument, nullptr, 'H'},
     {"frequency-threshold", required_argument, nullptr, 'f'},
     {"Micromize", no_argument, nullptr, 'M'},
-    {"Micromize-extend", no_argument, nullptr, 'N'},
+    {"Micromize-extend", required_argument, nullptr, 'N'},
+    {"begin-end", required_argument, nullptr, 'K'},
     {"m", required_argument, nullptr, 'm'},
     {"g", required_argument, nullptr, 'g'},
     {"n", required_argument, nullptr, 'n'},
@@ -106,6 +107,9 @@ void Help() {
          "    -N, --Micromize-extend <int>\n"
          "      when using micromizers always take first and last <int> minimizers\n"
          "      default: 0\n"
+         "    -K, --begin-end <int>\n"
+         "      when greater than zero, begin-end strategy will be used\n"
+         "      default: 0\n"
          "    -m <int>\n"
          "      default: 100\n"
          "      discard chains with chaining score less than <int>\n"
@@ -148,6 +152,7 @@ int main(int argc, char** argv) {
   double frequency = 0.001;
   bool micromize = false;
   std::uint8_t N = 0;
+  std::uint32_t K = 0;
   std::uint32_t m = 100;
   std::uint64_t g = 10000;
   std::uint8_t n = 4;
@@ -158,7 +163,7 @@ int main(int argc, char** argv) {
 
   std::vector<std::string> input_paths;
 
-  const char* optstr = "k:w:Hrf:MN:m:g:n:b:i:x:t:h";
+  const char* optstr = "k:w:Hrf:MN:K:m:g:n:b:i:x:t:h";
   char arg;
   // clang-format off
   while ((arg = getopt_long(argc, argv, optstr, options, nullptr)) != -1) {
@@ -170,6 +175,7 @@ int main(int argc, char** argv) {
       case 'f': frequency = std::atof(optarg); break;
       case 'M': micromize = true; break;
       case 'N': N = std::atoi(optarg); break;
+      case 'K': K = std::atoi(optarg); break;
       case 'm': m = std::atoi(optarg); break;
       case 'g': g = std::atoll(optarg); break;
       case 'n': n = std::atoi(optarg); break;
@@ -202,10 +208,10 @@ int main(int argc, char** argv) {
   std::cerr << "[ram::] using options: "
             << "k = " << k << ", w = " << w << ", hpc: " << hpc
             << ", robust_win: " << robust_winnowing << ", f = " << frequency
-            << ", M = " << micromize << ", N = " << (int)N << ", m = " << m
-            << ", g = " << g << ", n = " << (int)n << ", b = " << b
-            << ", reduce_win_sz = " << reduce_win_sz << ", x = " << preset
-            << ", t = " << num_threads << std::endl;
+            << ", M = " << micromize << ", N = " << (int)N << ", K = " << (int)K
+            << ", m = " << m << ", g = " << g << ", n = " << (int)n
+            << ", b = " << b << ", reduce_win_sz = " << reduce_win_sz
+            << ", x = " << preset << ", t = " << num_threads << std::endl;
 
   for (auto i = optind; i < argc; ++i) {
     input_paths.emplace_back(argv[i]);
@@ -292,8 +298,12 @@ int main(int argc, char** argv) {
         futures.emplace_back(thread_pool->Submit(
             [&](const std::unique_ptr<biosoup::Sequence>& sequence)
                 -> std::vector<biosoup::Overlap> {
-              return minimizer_engine.Map(sequence, is_ava, is_ava, micromize,
-                                          N);
+              if (!K)
+                return minimizer_engine.Map(sequence, is_ava, is_ava, micromize,
+                                            N);
+              else
+                return minimizer_engine.MapBeginEnd(sequence, is_ava, is_ava,
+                                                    K);
             },
             std::ref(it)));
       }

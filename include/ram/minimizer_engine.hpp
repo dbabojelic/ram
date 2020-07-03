@@ -11,8 +11,8 @@
 
 #include "biosoup/overlap.hpp"
 #include "biosoup/sequence.hpp"
-#include "thread_pool/thread_pool.hpp"
 #include "ram/uint128_t.hpp"
+#include "thread_pool/thread_pool.hpp"
 
 namespace ram {
 
@@ -26,8 +26,8 @@ class MinimizerEngine {
       std::uint8_t chain_minimizer_cnt_treshold = 4,          // -n param
       std::uint32_t best_n = 0,                               // -b param
       std::uint32_t reduce_win_sz = 0,
-      bool robust_winnowing = false,                          // -r param
-      bool hpc = false,  // use homopolymer-compressed minimizers
+      bool robust_winnowing = false,  // -r param
+      bool hpc = false,               // use homopolymer-compressed minimizers
       std::shared_ptr<thread_pool::ThreadPool> thread_pool = nullptr);
 
   MinimizerEngine(const MinimizerEngine&) = delete;
@@ -54,6 +54,14 @@ class MinimizerEngine {
       bool avoid_symmetric,  // ignore overlaps in which lhs_id > rhs_id
       bool micromize = false, std::uint8_t N = 0) const;  // only lhs
 
+  // find overlaps in preconstructed minimizer index
+  // using being-end strategy
+  std::vector<biosoup::Overlap> MapBeginEnd(
+      const std::unique_ptr<biosoup::Sequence>& sequence,
+      bool avoid_equal,      // ignore overlaps in which lhs_id == rhs_id
+      bool avoid_symmetric,  // ignore overlaps in which lhs_id > rhs_id
+      std::uint32_t K) const;
+
   // find overlaps between a pair of sequences
   std::vector<biosoup::Overlap> Map(
       const std::unique_ptr<biosoup::Sequence>& lhs,
@@ -66,14 +74,13 @@ class MinimizerEngine {
   using uint64_t_pair = std::pair<std::uint64_t, std::uint64_t>;
   using minimizer_t = std::pair<uint128_t, std::uint64_t>;
 
-
   // Match = [127:97] rhs_id
   //         [96:96] strand
   //         [95:64] rhs_pos +- lhs_pos
   //         [63:32] lhs_pos
   //         [31:0] rhs_pos
-  std::vector<biosoup::Overlap> Chain(std::uint64_t lhs_id,
-                                      std::vector<uint64_t_pair>&& matches) const;
+  std::vector<biosoup::Overlap> Chain(
+      std::uint64_t lhs_id, std::vector<uint64_t_pair>&& matches) const;
 
   // Minimizer = [127:64] kmer
   //             [63:32] id
