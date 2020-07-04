@@ -659,6 +659,8 @@ std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
   auto end_overlap = Map(end_seq, avoid_equal, avoid_symmetric);
 
   if (begin_overlap.empty() || end_overlap.empty()) return {};
+  if (begin_overlap.size() == best_n_ && end_overlap.size() == best_n_) // probably repetitive regions
+    return Map(sequence, avoid_equal, avoid_symmetric);
 
   std::uint64_t min_diff = std::numeric_limits<std::uint64_t>::max();
   int ansi = -1;
