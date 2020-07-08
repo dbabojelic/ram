@@ -648,7 +648,7 @@ std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
     const std::unique_ptr<biosoup::Sequence>& sequence, bool avoid_equal,
     bool avoid_symmetric, std::uint32_t K) const {
   auto sequence_size = sequence->data.size();
-  if (sequence_size <= 5 * K)
+  if (sequence_size <= 4 * K)
     return Map(sequence, avoid_equal, avoid_symmetric);
 
   auto begin_seq = std::unique_ptr<biosoup::Sequence>(
