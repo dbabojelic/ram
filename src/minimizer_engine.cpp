@@ -203,7 +203,7 @@ std::vector<biosoup::Overlap> MinimizerEngine::Map(
     }
   }
 
-  //  std::cout << matches.size() * 1.0 / sequence->data.size() << std::endl;
+  std::cout << matches.size() * 1.0 / sequence->data.size() << std::endl;
 
   return Chain(sequence->id, std::move(matches));
 }
@@ -682,7 +682,7 @@ std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
   //  std::cout << "sizes: " << begin_overlap.size() << " " <<
   //  end_overlap.size()
   //            << std::endl;
-  std::cout << begin_overlap.size() << " " << end_overlap.size() << std::endl;
+//  std::cout << begin_overlap.size() << " " << end_overlap.size() << std::endl;
   if (begin_overlap.empty() || end_overlap.empty()) return {};
 
   std::uint64_t min_diff = std::numeric_limits<std::uint64_t>::max();
