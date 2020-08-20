@@ -4,3 +4,5 @@ cmake-build-debug/
 .vscode/
 .idea/
 test/data/*.fasta
+.clangd/
+compile_commands.json

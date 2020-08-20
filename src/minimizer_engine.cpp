@@ -658,28 +658,6 @@ std::vector<biosoup::Overlap> MinimizerEngine::MapBeginEnd(
 
   auto begin_overlap = Map(begin_seq, avoid_equal, avoid_symmetric);
   auto end_overlap = Map(end_seq, avoid_equal, avoid_symmetric);
-
-  //  std::cout << "beginzzz" << std::endl;
-  //  int bla = 0;
-  //  for (const auto& ov : begin_overlap) {
-  //    std::cout << bla << ":  lhs: " << ov.lhs_begin << " " << ov.lhs_end
-  //              << "  rhs: " << ov.rhs_begin << " " << ov.rhs_end << " "
-  //              << ov.rhs_id << std::endl;
-  //    bla++;
-  //  }
-  //  std::cout << "endzzz" << std::endl;
-  //  bla = 0;
-  //  for (const auto& ov : end_overlap) {
-  //    std::cout <<bla <<  ":  lhs: " << ov.lhs_begin << " " << ov.lhs_end
-  //              << "  rhs: " << ov.rhs_begin << " " << ov.rhs_end << " "
-  //              << ov.rhs_id << std::endl;
-  //    bla++;
-  //  }
-  //  std::cout << std::endl;
-  //
-  //  std::cout << "sizes: " << begin_overlap.size() << " " <<
-  //  end_overlap.size()
-  //            << std::endl;
   if (begin_overlap.empty() || end_overlap.empty()) return {};
 
   std::uint64_t min_diff = std::numeric_limits<std::uint64_t>::max();
